@@ -1,0 +1,29 @@
+-- Migration: Create Users table (master contact list)
+-- This table stores all users in the system: patients, partners, staff, and admin
+-- Created: Phase 1
+
+CREATE TABLE Users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    uuid CHAR(36) UNIQUE NOT NULL DEFAULT (UUID()),
+    full_name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    role ENUM('patient', 'partner', 'staff', 'admin', 'super_admin') NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Indexes for performance optimization
+CREATE INDEX idx_users_uuid ON Users(uuid);
+CREATE INDEX idx_users_email ON Users(email);
+CREATE INDEX idx_users_role ON Users(role);
+CREATE INDEX idx_users_created_at ON Users(created_at);
+
+-- Add comments for documentation
+ALTER TABLE Users COMMENT = 'Master contact list for all system users';
+ALTER TABLE Users 
+    MODIFY COLUMN uuid CHAR(36) COMMENT 'Unique identifier for external API references',
+    MODIFY COLUMN full_name VARCHAR(255) COMMENT 'Full name of the user',
+    MODIFY COLUMN email VARCHAR(255) COMMENT 'Unique email address for login and communication',
+    MODIFY COLUMN password_hash VARCHAR(255) COMMENT 'Bcrypt hashed password',
+    MODIFY COLUMN role ENUM('patient', 'partner', 'staff', 'admin', 'super_admin') COMMENT 'User role: patient=end user, partner=referral source, staff=employee, admin=manager, super_admin=system admin';

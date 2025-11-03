@@ -1,0 +1,59 @@
+{
+  "name": "wecare-server-tests",
+  "version": "1.0.0",
+  "description": "Test suite for WeCare PWA Server",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest --coverage --verbose",
+    "test:watch": "jest --watch",
+    "test:unit": "jest --testPathPattern=unit",
+    "test:integration": "jest --testPathPattern=api",
+    "test:workflows": "jest --testPathPattern=workflows",
+    "test:security": "jest --testPathPattern=security",
+    "test:audit": "jest --testPathPattern=audit",
+    "test:ci": "jest --coverage --ci --maxWorkers=2"
+  },
+  "keywords": ["test", "jest", "wecare"],
+  "author": "WeCare Team",
+  "license": "ISC",
+  "devDependencies": {
+    "@faker-js/faker": "^8.4.0",
+    "@types/jest": "^29.5.0",
+    "jest": "^29.7.0",
+    "supertest": "^6.3.0"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.0",
+    "jsonwebtoken": "^9.0.0",
+    "mysql2": "^3.6.0",
+    "uuid": "^9.0.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "coverageDirectory": "./coverage",
+    "collectCoverageFrom": [
+      "../src/**/*.js",
+      "!../src/server.js",
+      "!../src/**/index.js"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 75,
+        "functions": 75,
+        "lines": 75,
+        "statements": 75
+      }
+    },
+    "testTimeout": 30000,
+    "setupFilesAfterEnv": ["./setup.js"],
+    "testMatch": [
+      "**/__tests__/**/*.js",
+      "**/?(*.)+(spec|test).js"
+    ],
+    "verbose": true,
+    "forceExit": true,
+    "clearMocks": true,
+    "resetMocks": true,
+    "restoreMocks": true
+  }
+}

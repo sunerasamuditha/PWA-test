@@ -1,0 +1,18 @@
+# This file ensures the uploads directory is tracked by Git
+# while actual uploaded files are ignored by .gitignore
+
+# The uploads directory is used for storing patient documents,
+# images, and other files uploaded through the WeCare PWA system.
+
+# Directory structure will be organized as:
+# uploads/
+# ├── documents/        # Patient documents (PDFs, images)
+# ├── avatars/         # User profile pictures
+# ├── temp/            # Temporary upload staging area
+# └── archives/        # Archived or historical files
+
+# Security notes:
+# - Files are stored outside the web root for security
+# - Access controlled through API endpoints with authentication
+# - File paths are stored in database, not directly accessible
+# - Virus scanning should be implemented before storage (Phase 5)

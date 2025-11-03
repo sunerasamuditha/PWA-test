@@ -1,0 +1,22 @@
+<!-- 
+PWA Icon Files Placeholder
+
+The following icon files should be added to this directory for the PWA to function properly:
+
+1. icon-192x192.png - 192x192 pixel icon for Android and general PWA use
+2. icon-512x512.png - 512x512 pixel icon for Android and general PWA use  
+3. apple-touch-icon.png - 180x180 pixel icon for iOS devices
+4. favicon.ico - Standard favicon for browsers
+
+All icons should feature the WeCare branding and logo.
+
+Design Guidelines:
+- Use the WeCare primary color (#2563eb) as the dominant color
+- Include the WeCare logo or medical cross symbol
+- Ensure good contrast and visibility at small sizes
+- Follow PWA icon best practices for rounded corners and safe areas
+
+These icons are referenced in:
+- client/index.html (apple-touch-icon and manifest)
+- client/vite.config.js (PWA manifest configuration)
+-->
