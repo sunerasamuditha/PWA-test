@@ -389,7 +389,8 @@ const getDocumentConfig = asyncHandler(async (req, res) => {
       allowedMimeTypes: ALLOWED_MIME_TYPES,
       allowedExtensions: ALLOWED_EXTENSIONS,
       maxFileSize: MAX_FILE_SIZE,
-      maxFileSizeMB: MAX_FILE_SIZE / (1024 * 1024)
+      maxFileSizeMB: MAX_FILE_SIZE / (1024 * 1024),
+      allowedTypes: DOCUMENT_TYPES // Expose canonical document types from DB
     }
   });
 });

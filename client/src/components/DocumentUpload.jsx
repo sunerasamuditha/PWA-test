@@ -25,9 +25,11 @@ const DocumentUpload = ({ patientUserId, onUploadSuccess, allowedTypes = null })
                        'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
     allowedExtensions: ['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx'],
     maxFileSizeMB: 10,
+    allowedTypes: [], // Will be populated from server
     isLoaded: false
   });
 
+  // Document types with labels - will be filtered by allowedTypes from server
   const documentTypes = [
     { value: 'passport', label: 'Passport' },
     { value: 'insurance_card', label: 'Insurance Card' },
@@ -50,6 +52,7 @@ const DocumentUpload = ({ patientUserId, onUploadSuccess, allowedTypes = null })
             allowedMimeTypes: response.data.allowedMimeTypes || config.allowedMimeTypes,
             allowedExtensions: response.data.allowedExtensions || config.allowedExtensions,
             maxFileSizeMB: response.data.maxFileSizeMB || config.maxFileSizeMB,
+            allowedTypes: response.data.allowedTypes || [], // Get from server
             isLoaded: true
           });
         }
@@ -67,8 +70,11 @@ const DocumentUpload = ({ patientUserId, onUploadSuccess, allowedTypes = null })
   useEffect(() => {
     if (allowedTypes && allowedTypes.length > 0) {
       setDocumentType(allowedTypes[0]);
+    } else if (config.allowedTypes && config.allowedTypes.length > 0 && !allowedTypes) {
+      // Use first type from server config if no prop-based filter
+      setDocumentType(config.allowedTypes[0]);
     }
-  }, [allowedTypes]);
+  }, [allowedTypes, config.allowedTypes]);
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -209,7 +215,17 @@ const DocumentUpload = ({ patientUserId, onUploadSuccess, allowedTypes = null })
             disabled={isUploading}
           >
             {documentTypes
-              .filter(type => !allowedTypes || allowedTypes.includes(type.value))
+              .filter(type => {
+                // Filter by prop-based allowedTypes first, then by server config
+                if (allowedTypes && allowedTypes.length > 0) {
+                  return allowedTypes.includes(type.value);
+                }
+                if (config.allowedTypes && config.allowedTypes.length > 0) {
+                  return config.allowedTypes.includes(type.value);
+                }
+                // If no filters, show all
+                return true;
+              })
               .map(type => (
                 <option key={type.value} value={type.value}>
                   {type.label}

@@ -20,6 +20,22 @@ const DocumentGallery = ({ patientUserId, showFilters = true, onDocumentClick, r
     total: 0,
     totalPages: 1
   });
+  const [allowedTypes, setAllowedTypes] = useState([]);
+
+  // Fetch allowed types from server on mount
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const response = await apiService.documents.getConfig();
+        if (response.success && response.data && response.data.allowedTypes) {
+          setAllowedTypes(response.data.allowedTypes);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch document config:', err);
+      }
+    };
+    fetchConfig();
+  }, []);
 
   useEffect(() => {
     fetchDocuments();
@@ -165,15 +181,11 @@ const DocumentGallery = ({ patientUserId, showFilters = true, onDocumentClick, r
               className="filter-select"
             >
               <option value="">All Types</option>
-              <option value="passport">Passport</option>
-              <option value="insurance_card">Insurance Card</option>
-              <option value="test_result">Test Result</option>
-              <option value="diagnosis_card">Diagnosis Card</option>
-              <option value="lab_report">Lab Report</option>
-              <option value="invoice">Invoice</option>
-              <option value="instruction_card">Instruction Card</option>
-              <option value="insurance_agreement">Insurance Agreement</option>
-              <option value="other">Other</option>
+              {allowedTypes.map(type => (
+                <option key={type} value={type}>
+                  {formatDocumentType(type)}
+                </option>
+              ))}
             </select>
           </div>
 

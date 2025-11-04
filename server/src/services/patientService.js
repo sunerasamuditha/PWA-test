@@ -294,7 +294,7 @@ class PatientService {
             file_size,
             uploaded_at,
             'document' as event_type
-          FROM \`Documents\`
+          FROM \`documents\`
           WHERE patient_user_id = ? ${documentDateCondition}
           ORDER BY uploaded_at DESC
         `;

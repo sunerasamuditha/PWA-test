@@ -1,14 +1,18 @@
 const { executeQuery } = require('../config/database');
 
 /**
- * Valid document types (canonical values from database-validation.sql)
+ * Valid document types (canonical values matching database ENUM in 007_create_documents_table.sql)
+ * These values MUST match the database enum exactly
  */
 const DOCUMENT_TYPES = [
   'passport',
   'insurance_card',
   'test_result',
+  'diagnosis_card',
   'lab_report',
-  'prescription',
+  'invoice',
+  'instruction_card',
+  'insurance_agreement',
   'other'
 ];
 
@@ -28,8 +32,8 @@ class Document {
       SELECT 
         d.*,
         u.full_name as uploader_name
-      FROM \`Documents\` d
-      LEFT JOIN \`Users\` u ON d.uploaded_by_staff_id = u.id
+      FROM \`documents\` d
+      LEFT JOIN \`users\` u ON d.uploaded_by_staff_id = u.id
       WHERE d.id = ?
     `;
     
@@ -59,8 +63,8 @@ class Document {
       SELECT 
         d.*,
         u.full_name as uploader_name
-      FROM \`Documents\` d
-      LEFT JOIN \`Users\` u ON d.uploaded_by_staff_id = u.id
+      FROM \`documents\` d
+      LEFT JOIN \`users\` u ON d.uploaded_by_staff_id = u.id
       WHERE d.patient_user_id = ?
     `;
     const params = [patientUserId];
@@ -90,7 +94,7 @@ class Document {
     // Get total count for pagination (before adding ORDER BY and LIMIT)
     const countQuery = `
       SELECT COUNT(*) as total
-      FROM \`Documents\` d
+      FROM \`documents\` d
       WHERE d.patient_user_id = ?
       ${type ? 'AND d.type = ?' : ''}
       ${search ? 'AND d.original_filename LIKE ?' : ''}
@@ -154,7 +158,7 @@ class Document {
     }
 
     const query = `
-      INSERT INTO \`Documents\` (
+      INSERT INTO \`documents\` (
         patient_user_id,
         type,
         file_path,
@@ -207,7 +211,7 @@ class Document {
     params.push(id);
 
     const query = `
-      UPDATE \`Documents\`
+      UPDATE \`documents\`
       SET ${updates.join(', ')}
       WHERE id = ?
     `;
@@ -224,7 +228,7 @@ class Document {
    * @returns {Promise<boolean>} Success status
    */
   static async deleteById(id) {
-    const query = 'DELETE FROM `Documents` WHERE id = ?';
+    const query = 'DELETE FROM `documents` WHERE id = ?';
     const [result] = await executeQuery(query, [id]);
     return result.affectedRows > 0;
   }
@@ -252,9 +256,9 @@ class Document {
         d.*,
         u.full_name as uploader_name,
         p.full_name as patient_name
-      FROM \`Documents\` d
-      LEFT JOIN \`Users\` u ON d.uploaded_by_staff_id = u.id
-      LEFT JOIN \`Users\` p ON d.patient_user_id = p.id
+      FROM \`documents\` d
+      LEFT JOIN \`users\` u ON d.uploaded_by_staff_id = u.id
+      LEFT JOIN \`users\` p ON d.patient_user_id = p.id
       WHERE 1=1
     `;
     const params = [];
@@ -290,7 +294,7 @@ class Document {
     // Get total count for pagination (before adding ORDER BY and LIMIT)
     const countQuery = `
       SELECT COUNT(*) as total
-      FROM \`Documents\` d
+      FROM \`documents\` d
       WHERE 1=1
       ${patient_user_id ? 'AND d.patient_user_id = ?' : ''}
       ${type ? 'AND d.type = ?' : ''}
@@ -338,7 +342,7 @@ class Document {
    * @returns {Promise<number>} Document count
    */
   static async countByPatientAndType(patientUserId, type = null) {
-    let query = 'SELECT COUNT(*) as count FROM `Documents` WHERE patient_user_id = ?';
+    let query = 'SELECT COUNT(*) as count FROM `documents` WHERE patient_user_id = ?';
     const params = [patientUserId];
 
     if (type) {
@@ -358,7 +362,7 @@ class Document {
   static async getCountsByType(patientUserId) {
     const query = `
       SELECT type, COUNT(*) as count 
-      FROM \`Documents\` 
+      FROM \`documents\` 
       WHERE patient_user_id = ? 
       GROUP BY type
     `;

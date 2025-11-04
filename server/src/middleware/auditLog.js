@@ -771,7 +771,7 @@ const auditDocumentUpload = async (req, res, next) => {
           await logAction({
             userId: user.id,
             action: 'create',
-            targetEntity: 'Documents',
+            targetEntity: 'documents',
             targetId: document.id,
             detailsAfter: {
               patientUserId: document.patientUserId,
@@ -808,7 +808,7 @@ const auditDocumentDownload = async (req, res, next) => {
           await logAction({
             userId: user.id,
             action: 'access',
-            targetEntity: 'Documents',
+            targetEntity: 'documents',
             targetId: parseInt(documentId),
             detailsAfter: {
               action: req.path.includes('/download') ? 'download' : 'view'
@@ -841,7 +841,7 @@ const auditDocumentDelete = async (req, res, next) => {
           await logAction({
             userId: user.id,
             action: 'delete',
-            targetEntity: 'Documents',
+            targetEntity: 'documents',
             targetId: deletedDocument.id,
             detailsBefore: {
               patientUserId: deletedDocument.patientUserId,

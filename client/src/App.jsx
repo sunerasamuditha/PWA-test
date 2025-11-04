@@ -22,6 +22,7 @@ import HealthHistory from './pages/HealthHistory.jsx';
 import PartnerProfile from './pages/PartnerProfile.jsx';
 import PartnerDashboard from './pages/PartnerDashboard.jsx';
 import PartnerReferrals from './pages/PartnerReferrals.jsx';
+import PatientDocuments from './pages/PatientDocuments.jsx';
 import './App.css';
 
 function App() {
@@ -111,8 +112,12 @@ function App() {
                     <HealthHistory />
                   </ProtectedRoute>
                 } />
+                <Route path="/patient/documents" element={
+                  <ProtectedRoute allowedRoles={['patient']}>
+                    <PatientDocuments />
+                  </ProtectedRoute>
+                } />
                 {/*
-                <Route path="/patient/documents" element={<ProtectedRoute allowedRoles={['patient']}><PatientDocuments /></ProtectedRoute>} />
                 <Route path="/patient/payments" element={<ProtectedRoute allowedRoles={['patient']}><PatientPaymentHistory /></ProtectedRoute>} />
                 */}
                 
