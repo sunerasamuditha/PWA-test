@@ -32,15 +32,15 @@ const UserManagement = () => {
   const [confirmAction, setConfirmAction] = useState(null);
 
   // Hooks
-  const { user } = useAuth();
+  const { user: authUser } = useAuth();
   const navigate = useNavigate();
 
   // Check if user has admin access
   useEffect(() => {
-    if (user && !['admin', 'super_admin'].includes(user.role)) {
+    if (authUser && !['admin', 'super_admin'].includes(authUser.role)) {
       navigate('/unauthorized');
     }
-  }, [user, navigate]);
+  }, [authUser, navigate]);
 
   // Debounce search input
   useEffect(() => {
@@ -93,10 +93,10 @@ const UserManagement = () => {
 
   // Fetch users when dependencies change
   useEffect(() => {
-    if (user && ['admin', 'super_admin'].includes(user.role)) {
+    if (authUser && ['admin', 'super_admin'].includes(authUser.role)) {
       fetchUsers();
     }
-  }, [fetchUsers, user]);
+  }, [fetchUsers, authUser]);
 
   // Reset to first page when filters change
   useEffect(() => {
@@ -323,15 +323,15 @@ const UserManagement = () => {
               </tr>
             </thead>
             <tbody>
-              {users.map(user => {
-                const roleInfo = getRoleInfo(user.role);
+              {users.map(rowUser => {
+                const roleInfo = getRoleInfo(rowUser.role);
                 return (
-                  <tr key={user.id}>
+                  <tr key={rowUser.id}>
                     <td>
                       <div className="user-info">
                         <div className="user-details">
-                          <span className="user-name">{user.fullName}</span>
-                          <span className="user-email">{user.email}</span>
+                          <span className="user-name">{rowUser.fullName}</span>
+                          <span className="user-email">{rowUser.email}</span>
                         </div>
                       </div>
                     </td>
@@ -342,35 +342,35 @@ const UserManagement = () => {
                     </td>
                     <td>
                       <span className="phone-number">
-                        {user.phoneNumber || '—'}
+                        {rowUser.phoneNumber || '—'}
                       </span>
                     </td>
                     <td>
-                      <span className={`status-badge ${user.isActive ? 'active' : 'inactive'}`}>
-                        {user.isActive ? 'Active' : 'Inactive'}
+                      <span className={`status-badge ${rowUser.isActive ? 'active' : 'inactive'}`}>
+                        {rowUser.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </td>
                     <td>
                       <span className="join-date">
-                        {new Date(user.createdAt).toLocaleDateString()}
+                        {new Date(rowUser.createdAt).toLocaleDateString()}
                       </span>
                     </td>
                     <td>
                       <div className="action-buttons">
                         <button
-                          onClick={() => handleEditUser(user)}
+                          onClick={() => handleEditUser(rowUser)}
                           className="btn btn-sm btn-secondary"
-                          title={user.id === currentUser?.id ? 'Cannot edit your own account' : 'Edit User'}
+                          title={rowUser.id === authUser?.id ? 'Cannot edit your own account' : 'Edit User'}
                         >
                           Edit
                         </button>
                         <button
-                          onClick={() => handleToggleUserStatus(user)}
-                          className={`btn btn-sm ${user.isActive ? 'btn-danger' : 'btn-success'}`}
-                          title={user.id === currentUser?.id ? 'Cannot change your own account status' : (user.isActive ? 'Deactivate User' : 'Reactivate User')}
-                          disabled={user.id === currentUser?.id}
+                          onClick={() => handleToggleUserStatus(rowUser)}
+                          className={`btn btn-sm ${rowUser.isActive ? 'btn-danger' : 'btn-success'}`}
+                          title={rowUser.id === authUser?.id ? 'Cannot change your own account status' : (rowUser.isActive ? 'Deactivate User' : 'Reactivate User')}
+                          disabled={rowUser.id === authUser?.id}
                         >
-                          {user.isActive ? 'Deactivate' : 'Reactivate'}
+                          {rowUser.isActive ? 'Deactivate' : 'Reactivate'}
                         </button>
                       </div>
                     </td>
