@@ -38,6 +38,9 @@ const updatePartnerProfile = async (req, res, next) => {
       message: 'Partner profile updated successfully',
       data: updatedPartner
     });
+    
+    // Call next for audit middleware
+    next();
   } catch (error) {
     next(error);
   }
@@ -55,6 +58,9 @@ const generateQRCode = async (req, res, next) => {
       success: true,
       data: qrCodeData
     });
+    
+    // Call next for audit middleware
+    next();
   } catch (error) {
     next(error);
   }
@@ -66,11 +72,17 @@ const generateQRCode = async (req, res, next) => {
 const getPartnerReferrals = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const { page = 1, limit = 10, status } = req.query;
+    const { page = 1, limit = 10, status, startDate, endDate } = req.query;
     
     const filters = {};
     if (status) {
       filters.status = status;
+    }
+    if (startDate) {
+      filters.startDate = startDate;
+    }
+    if (endDate) {
+      filters.endDate = endDate;
     }
     
     const referrals = await PartnerService.getPartnerReferrals(userId, {
@@ -129,6 +141,23 @@ const getAllPartners = async (req, res, next) => {
     res.json({
       success: true,
       data: partners
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get partner by user ID (admin only)
+ */
+const getPartnerById = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    const partner = await PartnerService.getPartnerProfile(userId);
+    
+    res.json({
+      success: true,
+      data: partner
     });
   } catch (error) {
     next(error);
@@ -197,6 +226,7 @@ module.exports = {
   getPartnerReferrals,
   getPartnerStats,
   getAllPartners,
+  getPartnerById,
   updatePartnerStatus,
   getCommissionHistory
 };

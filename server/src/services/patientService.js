@@ -174,22 +174,21 @@ class PatientService {
 
       let healthEvents = [];
 
-      // Build date filter conditions
-      let dateCondition = '';
-      let dateParams = [userId];
-      
-      if (startDate) {
-        dateCondition += ' AND DATE(created_at) >= ?';
-        dateParams.push(startDate);
-      }
-      
-      if (endDate) {
-        dateCondition += ' AND DATE(created_at) <= ?';
-        dateParams.push(endDate);
-      }
-
       // Fetch appointments if type allows
       if (!type || type === 'appointment') {
+        let appointmentDateCondition = '';
+        let appointmentParams = [userId];
+        
+        if (startDate) {
+          appointmentDateCondition += ' AND DATE(appointment_datetime) >= ?';
+          appointmentParams.push(startDate);
+        }
+        
+        if (endDate) {
+          appointmentDateCondition += ' AND DATE(appointment_datetime) <= ?';
+          appointmentParams.push(endDate);
+        }
+
         const appointmentQuery = `
           SELECT 
             id,
@@ -200,12 +199,12 @@ class PatientService {
             created_at,
             'appointment' as event_type
           FROM Appointments 
-          WHERE patient_user_id = ? ${dateCondition.replace('created_at', 'appointment_datetime')}
+          WHERE patient_user_id = ? ${appointmentDateCondition}
           ORDER BY appointment_datetime DESC
         `;
         
         try {
-          const [appointments] = await executeQuery(appointmentQuery, dateParams);
+          const [appointments] = await executeQuery(appointmentQuery, appointmentParams);
           healthEvents.push(...appointments.map(apt => ({
             type: 'appointment',
             date: apt.date,
@@ -224,6 +223,19 @@ class PatientService {
 
       // Fetch invoices if type allows
       if (!type || type === 'invoice') {
+        let invoiceDateCondition = '';
+        let invoiceParams = [userId];
+        
+        if (startDate) {
+          invoiceDateCondition += ' AND DATE(created_at) >= ?';
+          invoiceParams.push(startDate);
+        }
+        
+        if (endDate) {
+          invoiceDateCondition += ' AND DATE(created_at) <= ?';
+          invoiceParams.push(endDate);
+        }
+
         const invoiceQuery = `
           SELECT 
             id,
@@ -235,12 +247,12 @@ class PatientService {
             created_at,
             'invoice' as event_type
           FROM Invoices 
-          WHERE patient_user_id = ? ${dateCondition}
+          WHERE patient_user_id = ? ${invoiceDateCondition}
           ORDER BY created_at DESC
         `;
         
         try {
-          const [invoices] = await executeQuery(invoiceQuery, dateParams);
+          const [invoices] = await executeQuery(invoiceQuery, invoiceParams);
           healthEvents.push(...invoices.map(inv => ({
             type: 'invoice',
             date: inv.created_at,
@@ -261,6 +273,19 @@ class PatientService {
 
       // Fetch documents if type allows
       if (!type || type === 'document') {
+        let documentDateCondition = '';
+        let documentParams = [userId];
+        
+        if (startDate) {
+          documentDateCondition += ' AND DATE(uploaded_at) >= ?';
+          documentParams.push(startDate);
+        }
+        
+        if (endDate) {
+          documentDateCondition += ' AND DATE(uploaded_at) <= ?';
+          documentParams.push(endDate);
+        }
+
         const documentQuery = `
           SELECT 
             id,
@@ -270,12 +295,12 @@ class PatientService {
             uploaded_at,
             'document' as event_type
           FROM \`Documents\`
-          WHERE patient_user_id = ? ${dateCondition.replace('created_at', 'uploaded_at')}
+          WHERE patient_user_id = ? ${documentDateCondition}
           ORDER BY uploaded_at DESC
         `;
         
         try {
-          const [documents] = await executeQuery(documentQuery, dateParams);
+          const [documents] = await executeQuery(documentQuery, documentParams);
           healthEvents.push(...documents.map(doc => ({
             type: 'document',
             date: doc.uploaded_at,
@@ -369,6 +394,7 @@ class PatientService {
 
   /**
    * Delete patient record by user ID (admin function)
+   * Uses soft delete approach by deactivating the User, which maintains referential integrity
    * @param {number} userId - User ID
    * @returns {boolean} Success status
    */
@@ -379,7 +405,14 @@ class PatientService {
         throw new AppError('Patient record not found', 404);
       }
 
-      await Patient.deleteByUserId(userId);
+      // Soft delete the user instead of hard deleting the patient record
+      // This maintains referential integrity and follows the system's soft delete pattern
+      const deactivated = await User.deactivate(userId);
+      
+      if (!deactivated) {
+        throw new AppError('Failed to deactivate patient user', 500);
+      }
+
       return true;
     } catch (error) {
       console.error('Error deleting patient:', error);
@@ -485,19 +518,18 @@ class PatientService {
     const query = `
       SELECT 
         u.id,
-        u.first_name,
-        u.last_name,
+        u.full_name,
         u.email,
-        u.phone
+        u.phone_number
       FROM Users u
       WHERE u.role = 'patient'
         AND u.deleted_at IS NULL
         AND (
-          CONCAT(u.first_name, ' ', u.last_name) LIKE ?
+          u.full_name LIKE ?
           OR u.email LIKE ?
-          OR u.phone LIKE ?
+          OR u.phone_number LIKE ?
         )
-      ORDER BY u.first_name, u.last_name
+      ORDER BY u.full_name
       LIMIT ?
     `;
     
@@ -506,11 +538,9 @@ class PatientService {
     
     return patients.map(patient => ({
       id: patient.id,
-      firstName: patient.first_name,
-      lastName: patient.last_name,
-      fullName: `${patient.first_name} ${patient.last_name}`,
+      fullName: patient.full_name,
       email: patient.email,
-      phone: patient.phone
+      phone: patient.phone_number
     }));
   }
 }

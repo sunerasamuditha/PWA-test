@@ -124,8 +124,8 @@ class ReferralService {
         filters.endDate = endDate;
       }
 
-      const referrals = await Referral.findByPartnerId(partnerUserId, page, limit, filters);
-      const total = await Referral.countReferralsByPartner(partnerUserId, filters);
+      const referrals = await Referral.findByPartnerId(partnerUserId, filters);
+      const total = await Referral.countReferralsByPartner(partnerUserId);
 
       return {
         referrals,

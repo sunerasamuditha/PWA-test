@@ -151,7 +151,27 @@ const validateGetPartnerReferrals = [
   query('status')
     .optional()
     .isIn(['completed', 'pending', 'cancelled'])
-    .withMessage('Status must be completed, pending, or cancelled')
+    .withMessage('Status must be completed, pending, or cancelled'),
+  
+  query('startDate')
+    .optional()
+    .isISO8601()
+    .withMessage('Start date must be a valid ISO 8601 date'),
+  
+  query('endDate')
+    .optional()
+    .isISO8601()
+    .withMessage('End date must be a valid ISO 8601 date')
+    .custom((endDate, { req }) => {
+      if (endDate && req.query.startDate) {
+        const start = new Date(req.query.startDate);
+        const end = new Date(endDate);
+        if (end < start) {
+          throw new Error('End date must be greater than or equal to start date');
+        }
+      }
+      return true;
+    })
 ];
 
 /**

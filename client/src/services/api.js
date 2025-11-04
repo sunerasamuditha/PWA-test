@@ -401,15 +401,15 @@ export const apiService = {
   // Partner methods (Phase 5)
   partners: {
     async getPartnerInfo() {
-      const response = await api.get('/partners/profile');
+      const response = await api.get('/partners/me');
       return response.data;
     },
     async updatePartnerInfo(partnerData) {
-      const response = await api.put('/partners/profile', partnerData);
+      const response = await api.put('/partners/me', partnerData);
       return response.data;
     },
     async getReferrals(params = {}) {
-      const response = await api.get('/partners/referrals', { params });
+      const response = await api.get('/partners/me/referrals', { params });
       return response.data;
     },
     async getStats() {
@@ -417,7 +417,7 @@ export const apiService = {
       return response.data;
     },
     async getQRCode() {
-      const response = await api.get('/partners/qrcode');
+      const response = await api.get('/partners/me/qrcode');
       return response.data;
     },
     async getCommissionHistory(params = {}) {
@@ -427,6 +427,10 @@ export const apiService = {
     // Admin methods for partner management
     async getAllPartners(params = {}) {
       const response = await api.get('/partners', { params });
+      return response.data;
+    },
+    async getPartnerById(userId) {
+      const response = await api.get(`/partners/${userId}`);
       return response.data;
     },
     async getReferralsByPartner(partnerId, params = {}) {

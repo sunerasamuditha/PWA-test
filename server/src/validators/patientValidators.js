@@ -1,6 +1,18 @@
 const { body, query, validationResult } = require('express-validator');
 
 /**
+ * Validation rules for creating patient record (admin)
+ */
+const createPatientValidation = [
+  body('userId')
+    .isInt()
+    .withMessage('userId is required and must be an integer'),
+  
+  // Include all patient profile validation rules
+  ...patientProfileValidation
+];
+
+/**
  * Validation rules for patient profile operations
  */
 const patientProfileValidation = [
@@ -210,6 +222,7 @@ const validateNestedObject = (fieldPath, validationRules) => {
 };
 
 module.exports = {
+  createPatientValidation,
   patientProfileValidation,
   updatePatientValidation,
   healthHistoryQueryValidation,

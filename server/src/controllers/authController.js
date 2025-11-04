@@ -64,6 +64,21 @@ const register = asyncHandler(async (req, res) => {
     emergencyContact: req.body.emergencyContact
   };
 
+  // Include partner-specific fields if role is partner
+  if (role === 'partner') {
+    userData.partnerType = req.body.partnerType;
+    userData.companyName = req.body.companyName;
+    userData.businessLicense = req.body.businessLicense;
+    // Note: address is already included above, used for both patient and partner
+  }
+
+  // Include patient-specific fields if role is patient
+  if (role === 'patient') {
+    userData.passportInfo = req.body.passportInfo;
+    userData.insuranceInfo = req.body.insuranceInfo;
+    userData.currentAddress = req.body.currentAddress;
+  }
+
   const result = await AuthService.register(userData, referredBy);
 
   // Set user in res.locals for audit middleware

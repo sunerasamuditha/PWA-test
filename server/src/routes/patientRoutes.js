@@ -2,6 +2,7 @@ const express = require('express');
 const PatientController = require('../controllers/patientController');
 const { authenticate, authorize, ownerOrAdmin, requirePermission } = require('../middleware/auth');
 const {
+  createPatientValidation,
   patientProfileValidation,
   updatePatientValidation,
   healthHistoryQueryValidation
@@ -89,7 +90,7 @@ router.get('/:userId',
 router.post('/',
   authenticate,
   authorize('admin', 'super_admin'),
-  patientProfileValidation,
+  createPatientValidation,
   handleValidationErrors,
   PatientController.createPatient
 );

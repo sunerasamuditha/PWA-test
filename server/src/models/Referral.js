@@ -13,7 +13,7 @@ class Referral {
       const { partner_user_id, patient_user_id, commission_amount = 10.00 } = referralData;
       
       const query = `
-        INSERT INTO Referrals (partner_user_id, patient_user_id, commission_amount, referred_at)
+        INSERT INTO \`referrals\` (partner_user_id, patient_user_id, commission_amount, referred_at)
         VALUES (?, ?, ?, NOW())
       `;
       
@@ -31,9 +31,9 @@ class Referral {
           pu.email as partner_email,
           pau.full_name as patient_name,
           pau.email as patient_email
-        FROM Referrals r
-        LEFT JOIN Users pu ON r.partner_user_id = pu.id
-        LEFT JOIN Users pau ON r.patient_user_id = pau.id
+        FROM \`referrals\` r
+        LEFT JOIN \`users\` pu ON r.partner_user_id = pu.id
+        LEFT JOIN \`users\` pau ON r.patient_user_id = pau.id
         WHERE r.id = ?
       `;
       
@@ -106,8 +106,8 @@ class Referral {
           r.referred_at,
           u.full_name as patient_name,
           u.email as patient_email
-        FROM Referrals r
-        LEFT JOIN Users u ON r.patient_user_id = u.id
+        FROM \`referrals\` r
+        LEFT JOIN \`users\` u ON r.patient_user_id = u.id
         ${whereClause}
         ORDER BY ${validSortBy} ${validSortOrder}
         LIMIT ? OFFSET ?
@@ -118,7 +118,7 @@ class Referral {
       // Get total count
       const countQuery = `
         SELECT COUNT(*) as total
-        FROM Referrals r
+        FROM \`referrals\` r
         ${whereClause}
       `;
       
@@ -156,8 +156,8 @@ class Referral {
           r.referred_at,
           u.full_name as partner_name,
           u.email as partner_email
-        FROM Referrals r
-        LEFT JOIN Users u ON r.partner_user_id = u.id
+        FROM \`referrals\` r
+        LEFT JOIN \`users\` u ON r.partner_user_id = u.id
         WHERE r.patient_user_id = ?
       `;
       
@@ -183,7 +183,7 @@ class Referral {
     try {
       const query = `
         SELECT COUNT(*) as total
-        FROM Referrals
+        FROM \`referrals\`
         WHERE partner_user_id = ?
       `;
       
@@ -204,7 +204,7 @@ class Referral {
     try {
       const query = `
         SELECT COALESCE(SUM(commission_amount), 0) as total
-        FROM Referrals
+        FROM \`referrals\`
         WHERE partner_user_id = ?
       `;
       

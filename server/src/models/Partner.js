@@ -22,8 +22,8 @@ class Partner {
           u.full_name,
           u.email,
           u.phone_number
-        FROM Partners p
-        LEFT JOIN Users u ON p.user_id = u.id
+        FROM \`partners\` p
+        LEFT JOIN \`users\` u ON p.user_id = u.id
         WHERE p.user_id = ?
       `;
       
@@ -57,7 +57,7 @@ class Partner {
           p.commission_points,
           p.created_at,
           p.updated_at
-        FROM Partners p
+        FROM \`partners\` p
         WHERE p.id = ?
       `;
       
@@ -85,7 +85,7 @@ class Partner {
       const { user_id, type, status = 'pending', commission_points = 0.00 } = partnerData;
       
       const query = `
-        INSERT INTO Partners (user_id, type, status, commission_points, created_at, updated_at)
+        INSERT INTO \`partners\` (user_id, type, status, commission_points, created_at, updated_at)
         VALUES (?, ?, ?, ?, NOW(), NOW())
       `;
       
@@ -133,7 +133,7 @@ class Partner {
       updateValues.push(userId);
       
       const query = `
-        UPDATE Partners 
+        UPDATE \`partners\` 
         SET ${updateFields.join(', ')}
         WHERE user_id = ?
       `;
@@ -156,7 +156,7 @@ class Partner {
   static async updateCommissionPoints(userId, pointsToAdd, connection = null) {
     try {
       const query = `
-        UPDATE Partners 
+        UPDATE \`partners\` 
         SET commission_points = commission_points + ?,
             updated_at = NOW()
         WHERE user_id = ?
@@ -211,9 +211,18 @@ class Partner {
       
       const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
       
-      // Validate sort column
-      const allowedSortColumns = ['created_at', 'updated_at', 'full_name', 'email', 'type', 'status', 'commission_points'];
-      const validSortBy = allowedSortColumns.includes(sortBy) ? sortBy : 'created_at';
+      // Map sort columns to table-qualified names
+      const sortColumnMap = {
+        'created_at': 'p.created_at',
+        'updated_at': 'p.updated_at',
+        'full_name': 'u.full_name',
+        'email': 'u.email',
+        'type': 'p.type',
+        'status': 'p.status',
+        'commission_points': 'p.commission_points'
+      };
+      
+      const validSortBy = sortColumnMap[sortBy] || 'p.created_at';
       const validSortOrder = sortOrder.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
       
       // Get partners
@@ -230,8 +239,8 @@ class Partner {
           u.full_name,
           u.email,
           u.phone_number
-        FROM Partners p
-        LEFT JOIN Users u ON p.user_id = u.id
+        FROM \`partners\` p
+        LEFT JOIN \`users\` u ON p.user_id = u.id
         ${whereClause}
         ORDER BY ${validSortBy} ${validSortOrder}
         LIMIT ? OFFSET ?
@@ -242,8 +251,8 @@ class Partner {
       // Get total count
       const countQuery = `
         SELECT COUNT(*) as total
-        FROM Partners p
-        LEFT JOIN Users u ON p.user_id = u.id
+        FROM \`partners\` p
+        LEFT JOIN \`users\` u ON p.user_id = u.id
         ${whereClause}
       `;
       

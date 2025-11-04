@@ -14,6 +14,11 @@ import Profile from './pages/Profile.jsx';
 import ChangePassword from './pages/ChangePassword.jsx';
 import Unauthorized from './pages/Unauthorized.jsx';
 import UserManagement from './pages/admin/UserManagement.jsx';
+import PatientProfile from './pages/PatientProfile.jsx';
+import HealthHistory from './pages/HealthHistory.jsx';
+import PartnerProfile from './pages/PartnerProfile.jsx';
+import PartnerDashboard from './pages/PartnerDashboard.jsx';
+import PartnerReferrals from './pages/PartnerReferrals.jsx';
 import './App.css';
 
 function App() {
@@ -77,18 +82,26 @@ function App() {
                   </ProtectedRoute>
                 } />
                 
-                {/* Phase 4: Patient Features
-                <Route path="/patient/profile" element={<ProtectedRoute allowedRoles={['patient']}><PatientProfile /></ProtectedRoute>} />
-                <Route path="/patient/health-history" element={<ProtectedRoute allowedRoles={['patient']}><HealthHistory /></ProtectedRoute>} />
+                {/* Phase 4: Patient Features */}
+                <Route path="/patient/profile" element={
+                  <ProtectedRoute allowedRoles={['patient']}>
+                    <PatientProfile />
+                  </ProtectedRoute>
+                } />
+                <Route path="/patient/health-history" element={
+                  <ProtectedRoute allowedRoles={['patient']}>
+                    <HealthHistory />
+                  </ProtectedRoute>
+                } />
+                {/*
                 <Route path="/patient/documents" element={<ProtectedRoute allowedRoles={['patient']}><PatientDocuments /></ProtectedRoute>} />
                 <Route path="/patient/payments" element={<ProtectedRoute allowedRoles={['patient']}><PatientPaymentHistory /></ProtectedRoute>} />
                 */}
                 
-                {/* Phase 5: Partner Features
+                {/* Phase 5: Partner Features */}
                 <Route path="/partner/profile" element={<ProtectedRoute allowedRoles={['partner']}><PartnerProfile /></ProtectedRoute>} />
                 <Route path="/partner/dashboard" element={<ProtectedRoute allowedRoles={['partner']}><PartnerDashboard /></ProtectedRoute>} />
                 <Route path="/partner/referrals" element={<ProtectedRoute allowedRoles={['partner']}><PartnerReferrals /></ProtectedRoute>} />
-                */}
                 
                 {/* Phase 8: Appointments
                 <Route path="/appointments/book" element={<ProtectedRoute><AppointmentBooking /></ProtectedRoute>} />

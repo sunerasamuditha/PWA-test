@@ -78,8 +78,8 @@ class AuthService {
       try {
         const { fullName, email, password, role, passportInfo, insuranceInfo, currentAddress, partnerType } = userData;
 
-        // Check if email already exists
-        const existingUser = await User.findByEmail(email);
+        // Check if email already exists (including inactive users)
+        const existingUser = await User.findByEmailIncludeInactive(email);
         if (existingUser) {
           throw new AppError('Email already exists', 400);
         }

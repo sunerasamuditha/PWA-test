@@ -56,11 +56,9 @@ class Patient {
         WHERE id = ?
       `;
       
-      const result = connection 
+      const [rows] = connection 
         ? await connection.execute(query, [id])
         : await executeQuery(query, [id]);
-      
-      const rows = connection ? result[0] : result;
       
       if (rows.length === 0) {
         return null;
@@ -198,20 +196,18 @@ class Patient {
   }
 
   /**
-   * Delete patient by user ID
-   * @param {number} userId - User ID
-   * @returns {boolean} Success status
+   * Delete patient by user ID - REMOVED
+   * Patient deletion should be handled by soft-deleting the associated User record,
+   * which will cascade appropriately based on database constraints and business logic.
+   * Direct patient record deletion may violate referential integrity.
+   * 
+   * To deactivate a patient, use User.deactivate(userId) or User.softDelete(userId)
+   * 
+   * @deprecated Use User soft delete instead
    */
-  static async deleteByUserId(userId) {
-    try {
-      const query = 'DELETE FROM Patients WHERE user_id = ?';
-      await executeQuery(query, [userId]);
-      return true;
-    } catch (error) {
-      console.error('Error deleting patient:', error);
-      throw error;
-    }
-  }
+  // static async deleteByUserId(userId) {
+  //   // Method removed - use User soft delete to maintain referential integrity
+  // }
 
   /**
    * Get all patients with pagination and filtering

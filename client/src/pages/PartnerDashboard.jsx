@@ -26,7 +26,7 @@ const PartnerDashboard = () => {
       // Load partner statistics and recent referrals in parallel
       const [statsResponse, referralsResponse] = await Promise.all([
         apiService.get('/partners/stats'),
-        apiService.get('/partners/referrals?limit=5&page=1')
+        apiService.partners.getReferrals({ limit: 5, page: 1 })
       ]);
 
       if (statsResponse.success) {
@@ -144,17 +144,17 @@ const PartnerDashboard = () => {
 
       <div className="dashboard-content">
         {/* Partner Status Alert */}
-        {user?.partner?.status !== 'active' && (
+        {stats && stats.status !== 'active' && (
           <div className="status-alert">
             <div className="alert-icon">
-              {user?.partner?.status === 'pending' ? '⏳' : '⚠️'}
+              {stats.status === 'pending' ? '⏳' : '⚠️'}
             </div>
             <div className="alert-content">
               <h3>
-                {user?.partner?.status === 'pending' ? 'Application Under Review' : 'Account Issue'}
+                {stats.status === 'pending' ? 'Application Under Review' : 'Account Issue'}
               </h3>
               <p>
-                {user?.partner?.status === 'pending'
+                {stats.status === 'pending'
                   ? 'Your partner application is being reviewed. You\'ll be notified once approved.'
                   : 'Your account needs attention. Please contact support.'
                 }

@@ -195,29 +195,29 @@ router.use('/users', userRoutes);
 
 // Future phase routes are commented out until implemented
 
-// Phase 4 - Patient Routes (COMMENTED FOR PHASE 1)
-// const patientRoutes = require('./patientRoutes');
-// router.use('/patients', patientRoutes);
+// Phase 4 - Patient Routes
+const patientRoutes = require('./patientRoutes');
+router.use('/patients', patientRoutes);
 
-// Phase 5 - Partner Routes (COMMENTED FOR PHASE 1)
-// const partnerRoutes = require('./partnerRoutes');
-// router.use('/partners', partnerRoutes);
+// Phase 5 - Partner Routes
+const partnerRoutes = require('./partnerRoutes');
+router.use('/partners', partnerRoutes);
 
-// Phase 8 - Appointment Routes (COMMENTED FOR PHASE 1)
-// const appointmentRoutes = require('./appointmentRoutes');
-// router.use('/appointments', appointmentRoutes);
+// Phase 8 - Appointment Routes
+const appointmentRoutes = require('./appointmentRoutes');
+router.use('/appointments', appointmentRoutes);
 
-// Phase 7 - Document Routes (COMMENTED FOR PHASE 1)
-// const documentRoutes = require('./documentRoutes');
-// router.use('/documents', documentRoutes);
+// Phase 7 - Document Routes
+const documentRoutes = require('./documentRoutes');
+router.use('/documents', documentRoutes);
 
 // Phase 9 - Service Routes (COMMENTED FOR PHASE 1)
 // const serviceRoutes = require('./serviceRoutes');
 // router.use('/services', serviceRoutes);
 
-// Phase 9 - Invoice Routes (COMMENTED FOR PHASE 1)
-// const invoiceRoutes = require('./invoiceRoutes');
-// router.use('/invoices', invoiceRoutes);
+// Phase 9 - Invoice Routes
+const invoiceRoutes = require('./invoiceRoutes');
+router.use('/invoices', invoiceRoutes);
 
 // Phase 9 - Payment Routes (COMMENTED FOR PHASE 1)
 // const paymentRoutes = require('./paymentRoutes');

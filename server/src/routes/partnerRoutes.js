@@ -42,8 +42,8 @@ router.put('/me',
   authorize('partner'),
   validatePartnerProfileUpdate,
   checkValidationResult,
-  auditPartnerUpdate,
-  partnerController.updatePartnerProfile
+  partnerController.updatePartnerProfile,
+  auditPartnerUpdate
 );
 
 /**
@@ -54,8 +54,8 @@ router.put('/me',
 router.get('/me/qrcode',
   authenticate,
   authorize('partner'),
-  auditQRGeneration,
-  partnerController.generateQRCode
+  partnerController.generateQRCode,
+  auditQRGeneration
 );
 
 /**
@@ -108,6 +108,17 @@ router.get('/',
   validateGetPartners,
   checkValidationResult,
   partnerController.getAllPartners
+);
+
+/**
+ * @route   GET /api/partners/:userId
+ * @desc    Get partner by user ID (admin only)
+ * @access  Private (Admin only)
+ */
+router.get('/:userId',
+  authenticate,
+  authorize('admin', 'super_admin'),
+  partnerController.getPartnerById
 );
 
 /**

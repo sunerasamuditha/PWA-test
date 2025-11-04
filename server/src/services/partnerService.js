@@ -5,7 +5,7 @@ const { executeTransaction } = require('../config/database');
 const { AppError } = require('../middleware/errorHandler');
 const { generatePartnerQRCode } = require('../utils/qrcode');
 const { formatCommissionPoints } = require('../utils/commission');
-const { generateTokens } = require('../utils/jwt');
+const { generateAccessToken, generateRefreshToken } = require('../utils/jwt');
 
 class PartnerService {
   /**
@@ -38,11 +38,14 @@ class PartnerService {
         }, connection);
 
         // Generate tokens
-        const { accessToken, refreshToken } = generateTokens({
+        const accessToken = generateAccessToken({
           id: newUser.id,
+          uuid: newUser.uuid,
           email: newUser.email,
-          role: newUser.role,
-          uuid: newUser.uuid
+          role: newUser.role
+        });
+        const refreshToken = generateRefreshToken({
+          id: newUser.id
         });
 
         // Remove password hash from response
@@ -51,10 +54,8 @@ class PartnerService {
         return {
           user: safeUser,
           partner: newPartner,
-          tokens: {
-            accessToken,
-            refreshToken
-          }
+          accessToken,
+          refreshToken
         };
       } catch (error) {
         console.error('Error in partner registration:', error);
@@ -133,7 +134,7 @@ class PartnerService {
 
       // Update user data if there are user fields to update
       if (Object.keys(userFields).length > 0) {
-        await User.update(userId, userFields);
+        await User.updateById(userId, userFields);
       }
 
       // Update partner data if there are partner fields to update
