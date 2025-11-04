@@ -1,9 +1,9 @@
--- Migration: Create Audit_Logs table
+-- Migration: Create audit_logs table
 -- Security and compliance tracking for all system changes
 -- Records user actions for audit trails and compliance
 -- Created: Phase 1
 
-CREATE TABLE Audit_Logs (
+CREATE TABLE IF NOT EXISTS audit_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NULL COMMENT 'User who performed the action (NULL for system actions)',
     action ENUM('create', 'update', 'delete', 'login', 'logout', 'access') NOT NULL,
@@ -17,30 +17,30 @@ CREATE TABLE Audit_Logs (
     
     -- Foreign key constraint
     CONSTRAINT fk_audit_logs_user_id 
-        FOREIGN KEY (user_id) REFERENCES Users(id) 
+        FOREIGN KEY (user_id) REFERENCES users(id) 
         ON DELETE SET NULL 
         ON UPDATE CASCADE
 );
 
 -- Indexes for performance and compliance queries
-CREATE INDEX idx_audit_logs_user_id ON Audit_Logs(user_id);
-CREATE INDEX idx_audit_logs_action ON Audit_Logs(action);
-CREATE INDEX idx_audit_logs_target_entity ON Audit_Logs(target_entity);
-CREATE INDEX idx_audit_logs_target_id ON Audit_Logs(target_id);
-CREATE INDEX idx_audit_logs_created_at ON Audit_Logs(created_at);
-CREATE INDEX idx_audit_logs_ip_address ON Audit_Logs(ip_address);
+CREATE INDEX idx_audit_logs_user_id ON audit_logs(user_id);
+CREATE INDEX idx_audit_logs_action ON audit_logs(action);
+CREATE INDEX idx_audit_logs_target_entity ON audit_logs(target_entity);
+CREATE INDEX idx_audit_logs_target_id ON audit_logs(target_id);
+CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at);
+CREATE INDEX idx_audit_logs_ip_address ON audit_logs(ip_address);
 
 -- Composite indexes for common audit queries
-CREATE INDEX idx_audit_logs_user_action ON Audit_Logs(user_id, action);
-CREATE INDEX idx_audit_logs_entity_target ON Audit_Logs(target_entity, target_id);
-CREATE INDEX idx_audit_logs_user_created_at ON Audit_Logs(user_id, created_at);
-CREATE INDEX idx_audit_logs_action_created_at ON Audit_Logs(action, created_at);
+CREATE INDEX idx_audit_logs_user_action ON audit_logs(user_id, action);
+CREATE INDEX idx_audit_logs_entity_target ON audit_logs(target_entity, target_id);
+CREATE INDEX idx_audit_logs_user_created_at ON audit_logs(user_id, created_at);
+CREATE INDEX idx_audit_logs_action_created_at ON audit_logs(action, created_at);
 
 -- Table comment
-ALTER TABLE Audit_Logs COMMENT = 'Comprehensive audit trail for security, compliance, and change tracking';
+ALTER TABLE audit_logs COMMENT = 'Comprehensive audit trail for security, compliance, and change tracking';
 
 -- Column comments
-ALTER TABLE Audit_Logs 
+ALTER TABLE audit_logs 
     MODIFY COLUMN action ENUM('create', 'update', 'delete', 'login', 'logout', 'access') 
         COMMENT 'Action type: create=new record, update=modify record, delete=remove record, login=user login, logout=user logout, access=data access',
     MODIFY COLUMN target_entity VARCHAR(100) 

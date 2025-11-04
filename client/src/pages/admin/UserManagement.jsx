@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { apiService } from '../../services/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import ErrorMessage from '../../components/ErrorMessage';
-import ConfirmDialog from '../../components/admin/ConfirmDialog';
+import ConfirmDialog from '../../components/ConfirmDialog';
 import CreateUserModal from '../../components/admin/CreateUserModal';
 import EditUserModal from '../../components/admin/EditUserModal';
 
@@ -360,14 +360,15 @@ const UserManagement = () => {
                         <button
                           onClick={() => handleEditUser(user)}
                           className="btn btn-sm btn-secondary"
-                          title="Edit User"
+                          title={user.id === currentUser?.id ? 'Cannot edit your own account' : 'Edit User'}
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => handleToggleUserStatus(user)}
                           className={`btn btn-sm ${user.isActive ? 'btn-danger' : 'btn-success'}`}
-                          title={user.isActive ? 'Deactivate User' : 'Reactivate User'}
+                          title={user.id === currentUser?.id ? 'Cannot change your own account status' : (user.isActive ? 'Deactivate User' : 'Reactivate User')}
+                          disabled={user.id === currentUser?.id}
                         >
                           {user.isActive ? 'Deactivate' : 'Reactivate'}
                         </button>

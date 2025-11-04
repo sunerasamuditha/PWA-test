@@ -12,30 +12,8 @@ import Register from './pages/Register.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Profile from './pages/Profile.jsx';
 import ChangePassword from './pages/ChangePassword.jsx';
-import PatientProfile from './pages/PatientProfile.jsx';
-import HealthHistory from './pages/HealthHistory.jsx';
-import PatientDocuments from './pages/PatientDocuments.jsx';
-import AppointmentBooking from './pages/AppointmentBooking.jsx';
-import AppointmentList from './pages/AppointmentList.jsx';
-import AppointmentCalendar from './pages/AppointmentCalendar.jsx';
-import PartnerProfile from './pages/PartnerProfile.jsx';
-import PartnerDashboard from './pages/PartnerDashboard.jsx';
-import PartnerReferrals from './pages/PartnerReferrals.jsx';
-import UserManagement from './pages/admin/UserManagement.jsx';
-import PatientManagement from './pages/admin/PatientManagement.jsx';
-import PartnerManagement from './pages/admin/PartnerManagement.jsx';
-import StaffManagement from './pages/admin/StaffManagement.jsx';
-import ServiceManagement from './pages/admin/ServiceManagement.jsx';
-import ShiftManagement from './pages/admin/ShiftManagement.jsx';
-import ExternalEntityManagement from './pages/admin/ExternalEntityManagement.jsx';
-import AccountsPayableManagement from './pages/admin/AccountsPayableManagement.jsx';
-import AuditLogViewer from './pages/admin/AuditLogViewer.jsx';
-import InvoiceCreation from './pages/InvoiceCreation.jsx';
-import PatientPaymentHistory from './pages/PatientPaymentHistory.jsx';
-import StaffShiftHistory from './pages/StaffShiftHistory.jsx';
-import Settings from './pages/Settings.jsx';
-import MyAuditTrail from './pages/MyAuditTrail.jsx';
 import Unauthorized from './pages/Unauthorized.jsx';
+import UserManagement from './pages/admin/UserManagement.jsx';
 import './App.css';
 
 function App() {
@@ -61,6 +39,7 @@ function App() {
 
             <main className="main-content">
               <Routes>
+                {/* Phase 1 Routes - Only implemented pages */}
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={
                   <PublicRoute>
@@ -77,59 +56,12 @@ function App() {
                     <Dashboard />
                   </ProtectedRoute>
                 } />
+                <Route path="/unauthorized" element={<Unauthorized />} />
+                
+                {/* Phase 3: Profile Management */}
                 <Route path="/profile" element={
                   <ProtectedRoute>
                     <Profile />
-                  </ProtectedRoute>
-                } />
-                <Route path="/settings" element={
-                  <ProtectedRoute>
-                    <Settings />
-                  </ProtectedRoute>
-                } />
-                <Route path="/patient/profile" element={
-                  <ProtectedRoute allowedRoles={['patient']}>
-                    <PatientProfile />
-                  </ProtectedRoute>
-                } />
-                <Route path="/patient/health-history" element={
-                  <ProtectedRoute allowedRoles={['patient']}>
-                    <HealthHistory />
-                  </ProtectedRoute>
-                } />
-                <Route path="/patient/documents" element={
-                  <ProtectedRoute allowedRoles={['patient']}>
-                    <PatientDocuments />
-                  </ProtectedRoute>
-                } />
-                <Route path="/appointments/book" element={
-                  <ProtectedRoute>
-                    <AppointmentBooking />
-                  </ProtectedRoute>
-                } />
-                <Route path="/appointments" element={
-                  <ProtectedRoute>
-                    <AppointmentList />
-                  </ProtectedRoute>
-                } />
-                <Route path="/appointments/calendar" element={
-                  <ProtectedRoute>
-                    <AppointmentCalendar />
-                  </ProtectedRoute>
-                } />
-                <Route path="/partner/profile" element={
-                  <ProtectedRoute allowedRoles={['partner']}>
-                    <PartnerProfile />
-                  </ProtectedRoute>
-                } />
-                <Route path="/partner/dashboard" element={
-                  <ProtectedRoute allowedRoles={['partner']}>
-                    <PartnerDashboard />
-                  </ProtectedRoute>
-                } />
-                <Route path="/partner/referrals" element={
-                  <ProtectedRoute allowedRoles={['partner']}>
-                    <PartnerReferrals />
                   </ProtectedRoute>
                 } />
                 <Route path="/change-password" element={
@@ -137,72 +69,57 @@ function App() {
                     <ChangePassword />
                   </ProtectedRoute>
                 } />
+                
+                {/* Phase 6: Admin Features */}
                 <Route path="/admin/users" element={
                   <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
                     <UserManagement />
                   </ProtectedRoute>
                 } />
-                <Route path="/admin/patients" element={
-                  <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
-                    <PatientManagement />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/partners" element={
-                  <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
-                    <PartnerManagement />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/staff" element={
-                  <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
-                    <StaffManagement />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/services" element={
-                  <ProtectedRoute allowedRoles={['admin', 'super_admin', 'staff']} requiredPermissions={['process_payments']}>
-                    <ServiceManagement />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/shifts" element={
-                  <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
-                    <ShiftManagement />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/external-entities" element={
-                  <ProtectedRoute allowedRoles={['admin', 'super_admin', 'staff']} requiredPermissions={['manage_users']}>
-                    <ExternalEntityManagement />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/accounts-payable" element={
-                  <ProtectedRoute allowedRoles={['admin', 'super_admin', 'staff']} requiredPermissions={['manage_users']}>
-                    <AccountsPayableManagement />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/audit-logs" element={
-                  <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
-                    <AuditLogViewer />
-                  </ProtectedRoute>
-                } />
-                <Route path="/staff/shifts" element={
-                  <ProtectedRoute allowedRoles={['staff', 'admin', 'super_admin']}>
-                    <StaffShiftHistory />
-                  </ProtectedRoute>
-                } />
-                <Route path="/invoices/create" element={
-                  <ProtectedRoute allowedRoles={['admin', 'super_admin', 'staff']} requiredPermissions={['process_payments']}>
-                    <InvoiceCreation />
-                  </ProtectedRoute>
-                } />
-                <Route path="/patient/payments" element={
-                  <ProtectedRoute allowedRoles={['patient']}>
-                    <PatientPaymentHistory />
-                  </ProtectedRoute>
-                } />
-                <Route path="/my-audit-trail" element={
-                  <ProtectedRoute>
-                    <MyAuditTrail />
-                  </ProtectedRoute>
-                } />
-                <Route path="/unauthorized" element={<Unauthorized />} />
+                
+                {/* Phase 4: Patient Features
+                <Route path="/patient/profile" element={<ProtectedRoute allowedRoles={['patient']}><PatientProfile /></ProtectedRoute>} />
+                <Route path="/patient/health-history" element={<ProtectedRoute allowedRoles={['patient']}><HealthHistory /></ProtectedRoute>} />
+                <Route path="/patient/documents" element={<ProtectedRoute allowedRoles={['patient']}><PatientDocuments /></ProtectedRoute>} />
+                <Route path="/patient/payments" element={<ProtectedRoute allowedRoles={['patient']}><PatientPaymentHistory /></ProtectedRoute>} />
+                */}
+                
+                {/* Phase 5: Partner Features
+                <Route path="/partner/profile" element={<ProtectedRoute allowedRoles={['partner']}><PartnerProfile /></ProtectedRoute>} />
+                <Route path="/partner/dashboard" element={<ProtectedRoute allowedRoles={['partner']}><PartnerDashboard /></ProtectedRoute>} />
+                <Route path="/partner/referrals" element={<ProtectedRoute allowedRoles={['partner']}><PartnerReferrals /></ProtectedRoute>} />
+                */}
+                
+                {/* Phase 8: Appointments
+                <Route path="/appointments/book" element={<ProtectedRoute><AppointmentBooking /></ProtectedRoute>} />
+                <Route path="/appointments" element={<ProtectedRoute><AppointmentList /></ProtectedRoute>} />
+                <Route path="/appointments/calendar" element={<ProtectedRoute><AppointmentCalendar /></ProtectedRoute>} />
+                */}
+                
+                {/* Phase 6: Admin Features
+                <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><UserManagement /></ProtectedRoute>} />
+                <Route path="/admin/patients" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><PatientManagement /></ProtectedRoute>} />
+                <Route path="/admin/partners" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><PartnerManagement /></ProtectedRoute>} />
+                <Route path="/admin/staff" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><StaffManagement /></ProtectedRoute>} />
+                <Route path="/admin/services" element={<ProtectedRoute allowedRoles={['admin', 'super_admin', 'staff']} requiredPermissions={['process_payments']}><ServiceManagement /></ProtectedRoute>} />
+                <Route path="/admin/shifts" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><ShiftManagement /></ProtectedRoute>} />
+                <Route path="/admin/external-entities" element={<ProtectedRoute allowedRoles={['admin', 'super_admin', 'staff']} requiredPermissions={['manage_users']}><ExternalEntityManagement /></ProtectedRoute>} />
+                <Route path="/admin/accounts-payable" element={<ProtectedRoute allowedRoles={['admin', 'super_admin', 'staff']} requiredPermissions={['manage_users']}><AccountsPayableManagement /></ProtectedRoute>} />
+                */}
+                
+                {/* Phase 9: Invoicing
+                <Route path="/invoices/create" element={<ProtectedRoute allowedRoles={['admin', 'super_admin', 'staff']} requiredPermissions={['process_payments']}><InvoiceCreation /></ProtectedRoute>} />
+                */}
+                
+                {/* Phase 10: Staff Shifts
+                <Route path="/staff/shifts" element={<ProtectedRoute allowedRoles={['staff', 'admin', 'super_admin']}><StaffShiftHistory /></ProtectedRoute>} />
+                */}
+                
+                {/* Phase 13: Audit Logs
+                <Route path="/admin/audit-logs" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><AuditLogViewer /></ProtectedRoute>} />
+                <Route path="/my-audit-trail" element={<ProtectedRoute><MyAuditTrail /></ProtectedRoute>} />
+                */}
+                
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </main>
@@ -236,33 +153,8 @@ function NavigationLinks() {
         <>
           <Link to="/dashboard" className="nav-link">Dashboard</Link>
           <Link to="/profile" className="nav-link">Profile</Link>
-          <Link to="/my-audit-trail" className="nav-link">My Activity</Link>
-          <Link to="/settings" className="nav-link">Settings</Link>
-          {(user.role === 'admin' || user.role === 'super_admin') && (
-            <>
-              <Link to="/admin/users" className="nav-link">User Management</Link>
-              <Link to="/admin/patients" className="nav-link">Patients</Link>
-              <Link to="/admin/partners" className="nav-link">Partners</Link>
-              <Link to="/admin/staff" className="nav-link">Staff</Link>
-              <Link to="/admin/services" className="nav-link">Services</Link>
-              <Link to="/admin/shifts" className="nav-link">Shift Management</Link>
-              <Link to="/admin/external-entities" className="nav-link">External Entities</Link>
-              <Link to="/admin/accounts-payable" className="nav-link">Accounts Payable</Link>
-              <Link to="/admin/audit-logs" className="nav-link">Audit Logs</Link>
-              <Link to="/invoices/create" className="nav-link">Create Invoice</Link>
-            </>
-          )}
-          {user.role === 'staff' && user.permissions?.includes('process_payments') && (
-            <>
-              <Link to="/admin/services" className="nav-link">Services</Link>
-              <Link to="/invoices/create" className="nav-link">Create Invoice</Link>
-            </>
-          )}
-          {user.role === 'staff' && (
-            <Link to="/staff/shifts" className="nav-link">My Shifts</Link>
-          )}
-          {user.role === 'patient' && (
-            <Link to="/patient/payments" className="nav-link">Payment History</Link>
+          {['admin', 'super_admin'].includes(user.role) && (
+            <Link to="/admin/users" className="nav-link">Users</Link>
           )}
           <button onClick={handleLogout} className="nav-link nav-button">Logout</button>
         </>

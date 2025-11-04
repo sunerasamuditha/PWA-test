@@ -1,9 +1,9 @@
--- Migration: Create Services table
+-- Migration: Create services table
 -- Catalog of WeCare services with pricing and categorization
 -- Used for invoice line items and service billing
 -- Created: Phase 1
 
-CREATE TABLE Services (
+CREATE TABLE IF NOT EXISTS services (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL COMMENT 'Service name (e.g., "Consultation - General Practitioner")',
     description TEXT COMMENT 'Detailed description of the service',
@@ -15,21 +15,21 @@ CREATE TABLE Services (
 );
 
 -- Indexes for performance
-CREATE INDEX idx_services_is_active ON Services(is_active);
-CREATE INDEX idx_services_service_category ON Services(service_category);
-CREATE INDEX idx_services_price ON Services(price);
-CREATE INDEX idx_services_name ON Services(name);
-CREATE INDEX idx_services_created_at ON Services(created_at);
+CREATE INDEX idx_services_is_active ON services(is_active);
+CREATE INDEX idx_services_service_category ON services(service_category);
+CREATE INDEX idx_services_price ON services(price);
+CREATE INDEX idx_services_name ON services(name);
+CREATE INDEX idx_services_created_at ON services(created_at);
 
 -- Composite indexes for common queries
-CREATE INDEX idx_services_category_active ON Services(service_category, is_active);
-CREATE INDEX idx_services_active_price ON Services(is_active, price);
+CREATE INDEX idx_services_category_active ON services(service_category, is_active);
+CREATE INDEX idx_services_active_price ON services(is_active, price);
 
 -- Table comment
-ALTER TABLE Services COMMENT = 'Catalog of WeCare services with pricing for billing and invoice generation';
+ALTER TABLE services COMMENT = 'Catalog of WeCare services with pricing for billing and invoice generation';
 
 -- Column comments
-ALTER TABLE Services 
+ALTER TABLE services 
     MODIFY COLUMN service_category ENUM('consultation', 'procedure', 'lab_test', 'room_charge', 'service_charge', 'other') 
         COMMENT 'Service category: consultation=doctor visits, procedure=medical procedures, lab_test=laboratory tests, room_charge=accommodation fees, service_charge=administrative fees, other=miscellaneous services',
     MODIFY COLUMN price DECIMAL(10,2) 

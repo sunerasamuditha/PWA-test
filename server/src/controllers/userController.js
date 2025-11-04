@@ -97,10 +97,49 @@ const createUser = asyncHandler(async (req, res) => {
 const updateUser = asyncHandler(async (req, res) => {
   const { userId } = req.params;
   const updateData = req.body;
+  const currentUserId = req.user.id;
 
-  // Get user before update for audit log
+  // Prevent self-role demotion or any role change for own account
+  if (parseInt(userId) === currentUserId) {
+    if (updateData.role && updateData.role !== req.user.role) {
+      return res.status(403).json({
+        success: false,
+        message: 'You cannot change your own role. Contact a super_admin if role adjustment is needed.'
+      });
+    }
+
+    // Also prevent toggling own isActive status
+    if (updateData.hasOwnProperty('isActive')) {
+      return res.status(403).json({
+        success: false,
+        message: 'You cannot deactivate your own account. Please contact another administrator.'
+      });
+    }
+  }
+
+  // Secondary guard: Prevent demoting admin/super_admin roles unless requester is super_admin
   const userBefore = await UserService.getUserById(parseInt(userId));
   res.locals.userBefore = userBefore;
+
+  if (updateData.role && updateData.role !== userBefore.role) {
+    // Check if target user is admin or super_admin
+    if (['admin', 'super_admin'].includes(userBefore.role)) {
+      if (req.user.role !== 'super_admin') {
+        return res.status(403).json({
+          success: false,
+          message: 'Only super_admin can change roles for admin accounts'
+        });
+      }
+    }
+
+    // Prevent anyone from demoting a super_admin role
+    if (userBefore.role === 'super_admin' && updateData.role !== 'super_admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Super admin role cannot be demoted or changed'
+      });
+    }
+  }
 
   const updatedUser = await UserService.updateUser(parseInt(userId), updateData);
 
@@ -122,6 +161,26 @@ const updateUser = asyncHandler(async (req, res) => {
  */
 const deactivateUser = asyncHandler(async (req, res) => {
   const { userId } = req.params;
+  const currentUserId = req.user.id;
+
+  // Prevent users from deactivating themselves
+  if (parseInt(userId) === currentUserId) {
+    return res.status(403).json({
+      success: false,
+      message: 'You cannot deactivate your own account. Please contact another administrator.'
+    });
+  }
+
+  // Prevent admins from demoting or deactivating other admins
+  // Get the user to be deactivated
+  const userToDeactivate = await UserService.getUserById(parseInt(userId));
+  
+  if (['admin', 'super_admin'].includes(userToDeactivate.role) && req.user.role !== 'super_admin') {
+    return res.status(403).json({
+      success: false,
+      message: 'Only super_admin can deactivate admin accounts'
+    });
+  }
 
   // Get user before deactivation for audit log
   const user = await UserService.getUserById(parseInt(userId));

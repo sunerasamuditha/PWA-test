@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import { apiService } from '../../services/api';
 import { validateFullName, validateEmail, validatePhoneNumber } from '../../utils/validation';
 import LoadingSpinner from '../LoadingSpinner';
 import ErrorMessage from '../ErrorMessage';
 
 const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }) => {
+  // Hooks
+  const { user: currentUser } = useAuth();
+  const isCurrentUser = currentUser && user && currentUser.id === user.id;
+  
   // State management
   const [formData, setFormData] = useState({
     fullName: '',
@@ -265,7 +270,14 @@ const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }) => {
     <div className="modal-overlay" onClick={handleClose}>
       <div className="modal-content large" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Edit User</h2>
+          <div>
+            <h2>Edit User</h2>
+            {isCurrentUser && (
+              <p className="self-edit-warning" style={{ color: '#ff9800', fontSize: '0.85rem', marginTop: '0.25rem' }}>
+                ⚠️ You cannot change your own role or deactivate your account
+              </p>
+            )}
+          </div>
           <button 
             onClick={handleClose}
             className="modal-close"
@@ -299,7 +311,8 @@ const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }) => {
                   type="button"
                   onClick={() => handleStatusToggle(false)}
                   className="btn btn-warning"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isCurrentUser}
+                  title={isCurrentUser ? 'You cannot deactivate your own account' : 'Deactivate User'}
                 >
                   Deactivate User
                 </button>
@@ -308,7 +321,8 @@ const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }) => {
                   type="button"
                   onClick={() => handleStatusToggle(true)}
                   className="btn btn-success"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isCurrentUser}
+                  title={isCurrentUser ? 'You cannot change your own account status' : 'Reactivate User'}
                 >
                   Reactivate User
                 </button>
@@ -389,6 +403,8 @@ const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }) => {
                   value={formData.role}
                   onChange={handleChange}
                   className={errors.role ? 'error' : ''}
+                  disabled={isCurrentUser}
+                  title={isCurrentUser ? 'You cannot change your own role' : ''}
                   required
                 >
                   <option value="patient">Patient</option>
@@ -397,6 +413,9 @@ const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }) => {
                   <option value="admin">Admin</option>
                   <option value="super_admin">Super Admin</option>
                 </select>
+                {isCurrentUser && (
+                  <span className="field-notice" style={{ fontSize: '0.85rem', color: '#ff9800' }}>Role cannot be changed for your account</span>
+                )}
                 {errors.role && (
                   <span className="error-text">{errors.role}</span>
                 )}

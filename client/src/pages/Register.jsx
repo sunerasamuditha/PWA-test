@@ -255,6 +255,11 @@ const Register = () => {
         phoneNumber: formData.phoneNumber.trim() || null
       };
 
+      // Add referral code if present
+      if (referralCode) {
+        registrationData.referredBy = referralCode;
+      }
+
       // Add patient-specific data if role is patient
       if (formData.role === 'patient') {
         // Passport information (required for patients)

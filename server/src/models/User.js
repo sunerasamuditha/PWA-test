@@ -1,4 +1,5 @@
 const { executeQuery } = require('../config/database');
+const { v4: uuidv4 } = require('uuid');
 
 class User {
   /**
@@ -12,7 +13,7 @@ class User {
         SELECT id, uuid, full_name, email, password_hash, role, phone_number, 
                date_of_birth, address, emergency_contact, is_active, 
                created_at, updated_at
-        FROM Users 
+        FROM users 
         WHERE email = ? AND is_active = 1
       `;
       const results = await executeQuery(sql, [email]);
@@ -40,7 +41,7 @@ class User {
         SELECT id, uuid, full_name, email, password_hash, role, phone_number, 
                date_of_birth, address, emergency_contact, is_active, 
                created_at, updated_at
-        FROM Users 
+        FROM users 
         WHERE email = ?
       `;
       const results = await executeQuery(sql, [email]);
@@ -69,7 +70,7 @@ class User {
         SELECT id, uuid, full_name, email, password_hash, role, phone_number, 
                date_of_birth, address, emergency_contact, is_active, 
                created_at, updated_at
-        FROM Users 
+        FROM users 
         WHERE id = ? AND is_active = 1
       `;
       const results = connection 
@@ -100,7 +101,7 @@ class User {
         SELECT id, uuid, full_name, email, password_hash, role, phone_number, 
                date_of_birth, address, emergency_contact, is_active, 
                created_at, updated_at
-        FROM Users 
+        FROM users 
         WHERE uuid = ? AND is_active = 1
       `;
       const results = await executeQuery(sql, [uuid]);
@@ -141,14 +142,18 @@ class User {
         throw new Error(`Invalid role: ${role}. Must be one of: ${validRoles.join(', ')}`);
       }
 
+      // Generate UUID for the user
+      const uuid = uuidv4();
+
       const sql = `
-        INSERT INTO Users (
-          full_name, email, password_hash, role, phone_number, 
+        INSERT INTO users (
+          uuid, full_name, email, password_hash, role, phone_number, 
           date_of_birth, address, emergency_contact, is_active
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
       `;
       
       const params = [
+        uuid,
         fullName,
         email,
         passwordHash,
@@ -190,7 +195,7 @@ class User {
       // Build dynamic update query
       const allowedFields = [
         'full_name', 'email', 'phone_number', 'date_of_birth', 
-        'address', 'emergency_contact', 'role', 'password_hash'
+        'address', 'emergency_contact', 'role', 'password_hash', 'is_active'
       ];
 
       Object.keys(userData).forEach(key => {
@@ -208,10 +213,15 @@ class User {
       updateFields.push('updated_at = CURRENT_TIMESTAMP');
       updateValues.push(id);
 
+      // Check if we're updating is_active, if so don't filter by is_active
+      const isUpdatingIsActive = Object.keys(userData).some(key => this._camelToSnake(key) === 'is_active');
+      
+      const whereClause = isUpdatingIsActive ? 'WHERE id = ?' : 'WHERE id = ? AND is_active = 1';
+
       const sql = `
-        UPDATE Users 
+        UPDATE users 
         SET ${updateFields.join(', ')}
-        WHERE id = ? AND is_active = 1
+        ${whereClause}
       `;
 
       const result = await executeQuery(sql, updateValues);
@@ -220,8 +230,10 @@ class User {
         throw new Error('User not found or no changes made');
       }
 
-      // Return updated user
-      const updatedUser = await this.findById(id);
+      // Return updated user (including inactive users if we deactivated)
+      const updatedUser = isUpdatingIsActive 
+        ? await this.findByIdIncludeInactive(id)
+        : await this.findById(id);
       return updatedUser;
     } catch (error) {
       if (error.code === 'ER_DUP_ENTRY') {
@@ -232,14 +244,43 @@ class User {
   }
 
   /**
-   * Soft delete user by ID
+   * Update only is_active status bypassing the is_active = 1 filter
+   * Used for deactivation/reactivation of users
+   * @param {number} id - User ID
+   * @param {boolean} isActive - Active status
+   * @returns {object} Updated user object
+   */
+  static async updateIsActiveById(id, isActive) {
+    try {
+      const sql = `
+        UPDATE users 
+        SET is_active = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `;
+
+      const result = await executeQuery(sql, [isActive ? 1 : 0, id]);
+      
+      if (result.affectedRows === 0) {
+        throw new Error('User not found');
+      }
+
+      // Return updated user (include inactive users after deactivation)
+      const updatedUser = await this.findByIdIncludeInactive(id);
+      return updatedUser;
+    } catch (error) {
+      throw new Error(`Error updating user is_active status: ${error.message}`);
+    }
+  }
+
+  /**
+   * Soft delete user by ID (deactivate)
    * @param {number} id 
    * @returns {boolean} Success status
    */
   static async deleteById(id) {
     try {
       const sql = `
-        UPDATE Users 
+        UPDATE users 
         SET is_active = 0, updated_at = CURRENT_TIMESTAMP
         WHERE id = ? AND is_active = 1
       `;
@@ -291,7 +332,7 @@ class User {
         `WHERE ${whereConditions.join(' AND ')}` : '';
 
       // Get total count
-      const countSql = `SELECT COUNT(*) as total FROM Users ${whereClause}`;
+      const countSql = `SELECT COUNT(*) as total FROM users ${whereClause}`;
       const countResult = await executeQuery(countSql, queryParams);
       const total = countResult[0].total;
 
@@ -301,7 +342,7 @@ class User {
         SELECT id, uuid, full_name, email, password_hash, role, phone_number, 
                date_of_birth, address, emergency_contact, is_active, 
                created_at, updated_at
-        FROM Users 
+        FROM users 
         ${whereClause}
         ORDER BY created_at DESC
         LIMIT ? OFFSET ?
@@ -330,7 +371,7 @@ class User {
         SELECT id, uuid, full_name, email, password_hash, role, phone_number, 
                date_of_birth, address, emergency_contact, is_active, 
                created_at, updated_at
-        FROM Users 
+        FROM users 
         WHERE (full_name LIKE ? OR email LIKE ?) AND is_active = 1
         ORDER BY full_name ASC
         LIMIT 50
@@ -354,7 +395,7 @@ class User {
         SELECT id, uuid, full_name, email, password_hash, role, phone_number, 
                date_of_birth, address, emergency_contact, is_active, 
                created_at, updated_at
-        FROM Users 
+        FROM users 
         WHERE id = ?
       `;
       const results = await executeQuery(sql, [id]);
@@ -400,7 +441,46 @@ class User {
       const whereClause = whereConditions.length > 0 ? 
         `WHERE ${whereConditions.join(' AND ')}` : '';
 
-      const sql = `SELECT COUNT(*) as total FROM Users ${whereClause}`;
+      const sql = `SELECT COUNT(*) as total FROM users ${whereClause}`;
+      const result = await executeQuery(sql, queryParams);
+      
+      return result[0].total;
+    } catch (error) {
+      throw new Error(`Error counting users: ${error.message}`);
+    }
+  }
+
+  /**
+   * Count users matching filters
+   * @param {object} filters - Filter options
+   * @returns {number} Count of matching users
+   */
+  static async countUsers(filters = {}) {
+    try {
+      const { search = '', role = '', isActive = null } = filters;
+
+      let whereConditions = [];
+      let queryParams = [];
+
+      if (search) {
+        whereConditions.push('(full_name LIKE ? OR email LIKE ?)');
+        queryParams.push(`%${search}%`, `%${search}%`);
+      }
+
+      if (role) {
+        whereConditions.push('role = ?');
+        queryParams.push(role);
+      }
+
+      if (isActive !== null) {
+        whereConditions.push('is_active = ?');
+        queryParams.push(isActive ? 1 : 0);
+      }
+
+      const whereClause = whereConditions.length > 0 ? 
+        `WHERE ${whereConditions.join(' AND ')}` : '';
+
+      const sql = `SELECT COUNT(*) as total FROM users ${whereClause}`;
       const result = await executeQuery(sql, queryParams);
       
       return result[0].total;

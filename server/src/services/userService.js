@@ -203,7 +203,7 @@ class UserService {
         throw new AppError('User is already deactivated', 400);
       }
 
-      await User.updateById(userId, { isActive: false });
+      await User.updateIsActiveById(userId, false);
       return true;
     } catch (error) {
       if (error instanceof AppError) {
@@ -230,7 +230,7 @@ class UserService {
         throw new AppError('User is already active', 400);
       }
 
-      await User.updateById(userId, { isActive: true });
+      await User.updateIsActiveById(userId, true);
       return true;
     } catch (error) {
       if (error instanceof AppError) {

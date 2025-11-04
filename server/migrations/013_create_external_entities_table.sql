@@ -1,9 +1,9 @@
--- Migration: Create External_Entities table
+-- Migration: Create external_entities table
 -- Directory of external organizations that WeCare works with
 -- Used for accounts payable and vendor management
 -- Created: Phase 1
 
-CREATE TABLE External_Entities (
+CREATE TABLE IF NOT EXISTS external_entities (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL COMMENT 'Organization name',
     type ENUM('hospital', 'lab', 'supplier', 'insurance_company', 'other') NOT NULL,
@@ -13,15 +13,15 @@ CREATE TABLE External_Entities (
 );
 
 -- Indexes for performance
-CREATE INDEX idx_external_entities_name ON External_Entities(name);
-CREATE INDEX idx_external_entities_type ON External_Entities(type);
-CREATE INDEX idx_external_entities_created_at ON External_Entities(created_at);
+CREATE INDEX idx_external_entities_name ON external_entities(name);
+CREATE INDEX idx_external_entities_type ON external_entities(type);
+CREATE INDEX idx_external_entities_created_at ON external_entities(created_at);
 
 -- Table comment
-ALTER TABLE External_Entities COMMENT = 'Directory of external organizations for vendor and partner management';
+ALTER TABLE external_entities COMMENT = 'Directory of external organizations for vendor and partner management';
 
 -- Column comments
-ALTER TABLE External_Entities 
+ALTER TABLE external_entities 
     MODIFY COLUMN type ENUM('hospital', 'lab', 'supplier', 'insurance_company', 'other') 
         COMMENT 'Entity type: hospital=medical facilities, lab=laboratory services, supplier=equipment/medicine suppliers, insurance_company=insurance providers, other=miscellaneous',
     MODIFY COLUMN contact_info JSON 

@@ -25,8 +25,24 @@ const authenticate = asyncHandler(async (req, res, next) => {
     throw new AppError('User not found or account has been deactivated', 401);
   }
 
-  // Attach user to request object
-  req.user = user;
+  // Sanitize user object by removing sensitive fields
+  const sanitizedUser = {
+    id: user.id,
+    uuid: user.uuid,
+    fullName: user.fullName,
+    email: user.email,
+    role: user.role,
+    phoneNumber: user.phoneNumber,
+    dateOfBirth: user.dateOfBirth,
+    address: user.address,
+    emergencyContact: user.emergencyContact,
+    isActive: user.isActive,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt
+  };
+
+  // Attach sanitized user to request object
+  req.user = sanitizedUser;
   next();
 });
 

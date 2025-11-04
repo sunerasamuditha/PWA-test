@@ -17,7 +17,7 @@ const login = asyncHandler(async (req, res) => {
   res.cookie('refreshToken', result.refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production', // HTTPS in production
-    sameSite: 'strict',
+    sameSite: 'lax',
     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
   });
 
@@ -73,7 +73,7 @@ const register = asyncHandler(async (req, res) => {
   res.cookie('refreshToken', result.refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: 'lax',
     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
   });
 
@@ -106,7 +106,7 @@ const logout = asyncHandler(async (req, res) => {
   res.clearCookie('refreshToken', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict'
+    sameSite: 'lax'
   });
 
   res.status(200).json({
@@ -150,24 +150,41 @@ const getMe = asyncHandler(async (req, res) => {
 
   const user = await AuthService.getUserProfile(userId);
 
+  // Build response user object
+  const responseUser = {
+    id: user.id,
+    uuid: user.uuid,
+    email: user.email,
+    fullName: user.fullName,
+    role: user.role,
+    phoneNumber: user.phoneNumber,
+    dateOfBirth: user.dateOfBirth,
+    address: user.address,
+    emergencyContact: user.emergencyContact,
+    isActive: user.isActive,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt
+  };
+
+  // Include staff permissions if user is a staff member
+  if (user.role === 'staff') {
+    try {
+      const Staff = require('../models/Staff');
+      const staffData = await Staff.findByUserId(userId);
+      if (staffData) {
+        responseUser.permissions = staffData.permissions || [];
+      }
+    } catch (error) {
+      console.error('Error fetching staff permissions:', error);
+      responseUser.permissions = [];
+    }
+  }
+
   res.status(200).json({
     success: true,
     message: 'User profile retrieved successfully',
     data: {
-      user: {
-        id: user.id,
-        uuid: user.uuid,
-        email: user.email,
-        fullName: user.fullName,
-        role: user.role,
-        phoneNumber: user.phoneNumber,
-        dateOfBirth: user.dateOfBirth,
-        address: user.address,
-        emergencyContact: user.emergencyContact,
-        isActive: user.isActive,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt
-      }
+      user: responseUser
     }
   });
 });

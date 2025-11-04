@@ -1,7 +1,7 @@
 const express = require('express');
 const AdminController = require('../controllers/adminController');
 const { authenticateToken, requireRole, requirePermission } = require('../middleware/auth');
-const { auditLog } = require('../middleware/auditLog');
+const { auditAccess } = require('../middleware/auditLog');
 
 const router = express.Router();
 
@@ -15,7 +15,7 @@ router.use(requireRole(['admin', 'super_admin']));
  * @access Admin only
  */
 router.get('/dashboard/stats',
-  auditLog('admin_dashboard_accessed'),
+  auditAccess('Admin'),
   AdminController.getDashboardStats
 );
 
@@ -27,7 +27,7 @@ router.get('/dashboard/stats',
  */
 router.get('/analytics/revenue',
   requirePermission(['view_reports']),
-  auditLog('revenue_analytics_accessed'),
+  auditAccess('Admin'),
   AdminController.getRevenueAnalytics
 );
 
@@ -39,7 +39,7 @@ router.get('/analytics/revenue',
  */
 router.get('/analytics/users',
   requirePermission(['view_reports']),
-  auditLog('user_analytics_accessed'),
+  auditAccess('Admin'),
   AdminController.getUserActivityAnalytics
 );
 
@@ -50,7 +50,7 @@ router.get('/analytics/users',
  */
 router.get('/system/health',
   requirePermission(['system_settings']),
-  auditLog('system_health_checked'),
+  auditAccess('Admin'),
   AdminController.getSystemHealth
 );
 
@@ -60,7 +60,7 @@ router.get('/system/health',
  * @access Admin only
  */
 router.get('/overview',
-  auditLog('admin_overview_accessed'),
+  auditAccess('Admin'),
   AdminController.getAdminOverview
 );
 
@@ -74,7 +74,7 @@ router.get('/overview',
  */
 router.get('/export',
   requirePermission(['view_reports']),
-  auditLog('data_exported'),
+  auditAccess('Admin'),
   AdminController.exportData
 );
 

@@ -1,3 +1,6 @@
+// Load environment variables first
+require('dotenv').config();
+
 const path = require('path');
 const app = require('./app'); // Import Express app (no listener)
 const { testConnection, closePool } = require('./config/database');

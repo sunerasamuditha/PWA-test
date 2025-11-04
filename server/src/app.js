@@ -1,5 +1,4 @@
 const express = require('express');
-const dotenv = require('dotenv');
 const cors = require('cors');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
@@ -9,9 +8,6 @@ const { errorHandler, notFound } = require('./middleware/errorHandler');
 const { sanitizeRequest } = require('./middleware/sanitization');
 const { publicApiLimiter } = require('./middleware/rateLimiter');
 const { requestLogger } = require('./middleware/requestLogger');
-
-// Load environment variables
-dotenv.config();
 
 // Create Express application
 const app = express();

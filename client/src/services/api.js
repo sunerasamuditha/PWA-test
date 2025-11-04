@@ -89,10 +89,9 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        // Attempt to refresh token using cookie-based flow
-        const response = await api.post('/auth/refresh');
-
-        const newToken = response.data.data.accessToken;
+        // Attempt to refresh token using apiService.auth.refreshToken()
+        const newToken = await apiService.auth.refreshToken();
+        
         localStorage.setItem('wecare_token', newToken);
 
         // Retry original request with new token
@@ -201,7 +200,7 @@ export const apiService = {
   users: {
     // Profile management (self-service)
     async getProfile() {
-      const response = await api.get('/auth/profile');
+      const response = await api.get('/auth/me');
       return response.data;
     },
     async updateProfile(userData) {
@@ -209,7 +208,7 @@ export const apiService = {
       return response.data;
     },
     async changePassword(passwordData) {
-      const response = await api.put('/auth/change-password', passwordData);
+      const response = await api.put('/auth/password', passwordData);
       return response.data;
     },
 
@@ -236,6 +235,11 @@ export const apiService = {
     },
     async reactivate(id) {
       const response = await api.post(`/users/${id}/reactivate`);
+      return response.data;
+    },
+    // Search users by name or email
+    async search(searchTerm = '') {
+      const response = await api.get('/users/search', { params: { q: searchTerm } });
       return response.data;
     }
   },

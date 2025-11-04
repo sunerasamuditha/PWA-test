@@ -1,3 +1,6 @@
+// Load environment variables first
+require('dotenv').config();
+
 const fs = require('fs');
 const path = require('path');
 const { pool, executeTransaction, closePool } = require('../src/config/database');
@@ -117,33 +120,61 @@ function readMigrationFile(filename) {
 }
 
 /**
- * Execute a single migration file
+ * Execute a single migration file within a transaction
  * @param {string} filename - Migration filename
  * @param {string} sql - SQL content
  */
 async function executeMigration(filename, sql) {
+  const connection = await pool.getConnection();
+  
   try {
     console.log(`🔄 Running migration: ${filename}`);
     
-    await executeTransaction(async (connection) => {
-      // Split SQL by semicolons and execute each statement
-      const statements = sql
-        .split(';')
-        .map(stmt => stmt.trim())
-        .filter(stmt => stmt.length > 0 && !stmt.startsWith('--'));
-      
-      for (const statement of statements) {
-        if (statement.trim()) {
+    // Start transaction for this migration
+    await connection.beginTransaction();
+    
+    // Split SQL by semicolons and execute each statement
+    // First, remove comment-only lines, then split by semicolons
+    const cleanedSql = sql
+      .split('\n')
+      .filter(line => {
+        const trimmed = line.trim();
+        // Keep the line if it's not empty and not a comment-only line
+        return trimmed.length > 0 && !trimmed.startsWith('--');
+      })
+      .join('\n');
+    
+    const statements = cleanedSql
+      .split(';')
+      .map(stmt => stmt.trim())
+      .filter(stmt => stmt.length > 0);
+    
+    for (let i = 0; i < statements.length; i++) {
+      const statement = statements[i];
+      if (statement.trim()) {
+        try {
           await connection.execute(statement);
+        } catch (stmtError) {
+          // Log the specific statement error and throw to trigger rollback
+          console.error(`❌ Statement error in ${filename}:`);
+          console.error(`   SQL: ${statement.substring(0, 100)}...`);
+          console.error(`   Error: ${stmtError.message}`);
+          throw stmtError; // Re-throw to trigger rollback
         }
       }
-    });
+    }
     
+    // Commit transaction only if all statements succeeded
+    await connection.commit();
     console.log(`✅ Migration completed: ${filename}`);
   } catch (error) {
-    console.error(`❌ Migration failed: ${filename}`);
+    // Rollback transaction on any error
+    await connection.rollback();
+    console.error(`❌ Migration failed and rolled back: ${filename}`);
     console.error('Error:', error.message);
-    throw error;
+    throw error; // Re-throw to stop migration process
+  } finally {
+    connection.release();
   }
 }
 

@@ -185,9 +185,7 @@ router.get('/', (req, res) => {
   });
 });
 
-// Route imports will be added here as modules are implemented in future phases
-
-// Phase 2 - Authentication Routes
+// Route imports
 const authRoutes = require('./authRoutes');
 router.use('/auth', authRoutes);
 
@@ -195,67 +193,69 @@ router.use('/auth', authRoutes);
 const userRoutes = require('./userRoutes');
 router.use('/users', userRoutes);
 
-// Phase 4 - Patient Routes
-const patientRoutes = require('./patientRoutes');
-router.use('/patients', patientRoutes);
+// Future phase routes are commented out until implemented
 
-// Phase 5 - Partner Routes
-const partnerRoutes = require('./partnerRoutes');
-router.use('/partners', partnerRoutes);
+// Phase 4 - Patient Routes (COMMENTED FOR PHASE 1)
+// const patientRoutes = require('./patientRoutes');
+// router.use('/patients', patientRoutes);
 
-// Phase 8 - Appointment Routes
-const appointmentRoutes = require('./appointmentRoutes');
-router.use('/appointments', appointmentRoutes);
+// Phase 5 - Partner Routes (COMMENTED FOR PHASE 1)
+// const partnerRoutes = require('./partnerRoutes');
+// router.use('/partners', partnerRoutes);
 
-// Phase 7 - Document Routes
-const documentRoutes = require('./documentRoutes');
-router.use('/documents', documentRoutes);
+// Phase 8 - Appointment Routes (COMMENTED FOR PHASE 1)
+// const appointmentRoutes = require('./appointmentRoutes');
+// router.use('/appointments', appointmentRoutes);
 
-// Phase 9 - Service Routes
-const serviceRoutes = require('./serviceRoutes');
-router.use('/services', serviceRoutes);
+// Phase 7 - Document Routes (COMMENTED FOR PHASE 1)
+// const documentRoutes = require('./documentRoutes');
+// router.use('/documents', documentRoutes);
 
-// Phase 9 - Invoice Routes
-const invoiceRoutes = require('./invoiceRoutes');
-router.use('/invoices', invoiceRoutes);
+// Phase 9 - Service Routes (COMMENTED FOR PHASE 1)
+// const serviceRoutes = require('./serviceRoutes');
+// router.use('/services', serviceRoutes);
 
-// Phase 9 - Payment Routes
-const paymentRoutes = require('./paymentRoutes');
-router.use('/payments', paymentRoutes);
+// Phase 9 - Invoice Routes (COMMENTED FOR PHASE 1)
+// const invoiceRoutes = require('./invoiceRoutes');
+// router.use('/invoices', invoiceRoutes);
 
-// Phase 6 - Staff Routes
-const staffRoutes = require('./staffRoutes');
-router.use('/staff', staffRoutes);
+// Phase 9 - Payment Routes (COMMENTED FOR PHASE 1)
+// const paymentRoutes = require('./paymentRoutes');
+// router.use('/payments', paymentRoutes);
 
-// Phase 6 - Admin Routes
-const adminRoutes = require('./adminRoutes');
-router.use('/admin', adminRoutes);
+// Phase 6 - Staff Routes (COMMENTED FOR PHASE 1)
+// const staffRoutes = require('./staffRoutes');
+// router.use('/staff', staffRoutes);
 
-// Phase 10 - Shift Routes
-const shiftRoutes = require('./shiftRoutes');
-router.use('/shifts', shiftRoutes);
+// Phase 6 - Admin Routes (COMMENTED FOR PHASE 1)
+// const adminRoutes = require('./adminRoutes');
+// router.use('/admin', adminRoutes);
 
-// Phase 11 - External Entity Routes
-const externalEntityRoutes = require('./externalEntityRoutes');
-router.use('/external-entities', externalEntityRoutes);
+// Phase 10 - Shift Routes (COMMENTED FOR PHASE 1)
+// const shiftRoutes = require('./shiftRoutes');
+// router.use('/shifts', shiftRoutes);
 
-// Phase 11 - Accounts Payable Routes
-const accountsPayableRoutes = require('./accountsPayableRoutes');
-router.use('/accounts-payable', accountsPayableRoutes);
+// Phase 11 - External Entity Routes (COMMENTED FOR PHASE 1)
+// const externalEntityRoutes = require('./externalEntityRoutes');
+// router.use('/external-entities', externalEntityRoutes);
 
-// Phase 12 - Push Notification Routes (PWA)
-const notificationRoutes = require('./notificationRoutes');
-router.use('/notifications', notificationRoutes);
+// Phase 11 - Accounts Payable Routes (COMMENTED FOR PHASE 1)
+// const accountsPayableRoutes = require('./accountsPayableRoutes');
+// router.use('/accounts-payable', accountsPayableRoutes);
 
-// Phase 13 - Audit Log Routes (Security & Compliance)
-const auditLogRoutes = require('./auditLogRoutes');
-router.use('/audit-logs', auditLogRoutes);
+// Phase 12 - Push Notification Routes (PWA) (COMMENTED FOR PHASE 1)
+// const notificationRoutes = require('./notificationRoutes');
+// router.use('/notifications', notificationRoutes);
 
-// Phase 9 - Report Routes
+// Phase 13 - Audit Log Routes (Security & Compliance) (COMMENTED FOR PHASE 1)
+// const auditLogRoutes = require('./auditLogRoutes');
+// router.use('/audit-logs', auditLogRoutes);
+
+// Phase 9 - Report Routes (COMMENTED FOR PHASE 1)
 // const reportRoutes = require('./reportRoutes');
 // router.use('/reports', reportRoutes);
 
-// Phase 9 - Analytics Routes
+// Phase 9 - Analytics Routes (COMMENTED FOR PHASE 1)
 // const analyticsRoutes = require('./analyticsRoutes');
 // router.use('/analytics', analyticsRoutes);
 

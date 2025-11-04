@@ -10,8 +10,7 @@ const pool = mysql.createPool({
   connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT) || 10,
   waitForConnections: true,
   queueLimit: 0,
-  acquireTimeout: 60000,
-  timeout: 60000,
+  connectTimeout: 60000, // Fixed: use connectTimeout instead of acquireTimeout
   multipleStatements: false, // Security: prevent multiple statement execution
   timezone: 'Z', // Use UTC timezone
 });

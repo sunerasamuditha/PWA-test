@@ -111,6 +111,7 @@ export const AuthProvider = ({ children }) => {
     try {
       setIsLoading(true);
       
+      // userData should contain all registration fields including referredBy if present
       const response = await apiService.post('/auth/register', userData);
 
       if (response.data.success) {

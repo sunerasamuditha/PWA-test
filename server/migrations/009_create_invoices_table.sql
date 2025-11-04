@@ -1,9 +1,9 @@
--- Migration: Create Invoices table
+-- Migration: Create invoices table
 -- Patient billing and payment tracking
 -- Links to patients and optionally to appointments
 -- Created: Phase 1
 
-CREATE TABLE Invoices (
+CREATE TABLE IF NOT EXISTS invoices (
     id INT AUTO_INCREMENT PRIMARY KEY,
     invoice_number VARCHAR(50) UNIQUE NOT NULL COMMENT 'Human-readable invoice identifier (e.g., WC-2024-001)',
     appointment_id INT NULL COMMENT 'Optional link to appointment (NULL for walk-in or running bills)',
@@ -19,41 +19,41 @@ CREATE TABLE Invoices (
     
     -- Foreign key constraints
     CONSTRAINT fk_invoices_appointment_id 
-        FOREIGN KEY (appointment_id) REFERENCES Appointments(id) 
+        FOREIGN KEY (appointment_id) REFERENCES appointments(id) 
         ON DELETE SET NULL 
         ON UPDATE CASCADE,
         
     CONSTRAINT fk_invoices_patient_user_id 
-        FOREIGN KEY (patient_user_id) REFERENCES Users(id) 
+        FOREIGN KEY (patient_user_id) REFERENCES users(id) 
         ON DELETE CASCADE 
         ON UPDATE CASCADE,
         
     CONSTRAINT fk_invoices_prepared_by_staff_id 
-        FOREIGN KEY (prepared_by_staff_id) REFERENCES Users(id) 
+        FOREIGN KEY (prepared_by_staff_id) REFERENCES users(id) 
         ON DELETE SET NULL 
         ON UPDATE CASCADE
 );
 
 -- Indexes for performance
-CREATE INDEX idx_invoices_invoice_number ON Invoices(invoice_number);
-CREATE INDEX idx_invoices_appointment_id ON Invoices(appointment_id);
-CREATE INDEX idx_invoices_patient_user_id ON Invoices(patient_user_id);
-CREATE INDEX idx_invoices_prepared_by_staff_id ON Invoices(prepared_by_staff_id);
-CREATE INDEX idx_invoices_status ON Invoices(status);
-CREATE INDEX idx_invoices_invoice_type ON Invoices(invoice_type);
-CREATE INDEX idx_invoices_due_date ON Invoices(due_date);
-CREATE INDEX idx_invoices_created_at ON Invoices(created_at);
+CREATE INDEX idx_invoices_invoice_number ON invoices(invoice_number);
+CREATE INDEX idx_invoices_appointment_id ON invoices(appointment_id);
+CREATE INDEX idx_invoices_patient_user_id ON invoices(patient_user_id);
+CREATE INDEX idx_invoices_prepared_by_staff_id ON invoices(prepared_by_staff_id);
+CREATE INDEX idx_invoices_status ON invoices(status);
+CREATE INDEX idx_invoices_invoice_type ON invoices(invoice_type);
+CREATE INDEX idx_invoices_due_date ON invoices(due_date);
+CREATE INDEX idx_invoices_created_at ON invoices(created_at);
 
 -- Composite indexes for common queries
-CREATE INDEX idx_invoices_patient_status ON Invoices(patient_user_id, status);
-CREATE INDEX idx_invoices_status_due_date ON Invoices(status, due_date);
-CREATE INDEX idx_invoices_patient_created_at ON Invoices(patient_user_id, created_at);
+CREATE INDEX idx_invoices_patient_status ON invoices(patient_user_id, status);
+CREATE INDEX idx_invoices_status_due_date ON invoices(status, due_date);
+CREATE INDEX idx_invoices_patient_created_at ON invoices(patient_user_id, created_at);
 
 -- Table comment
-ALTER TABLE Invoices COMMENT = 'Patient invoices and billing records with payment tracking';
+ALTER TABLE invoices COMMENT = 'Patient invoices and billing records with payment tracking';
 
 -- Column comments
-ALTER TABLE Invoices 
+ALTER TABLE invoices 
     MODIFY COLUMN invoice_number VARCHAR(50) 
         COMMENT 'Human-readable invoice number following format: WC-YYYY-NNNN',
     MODIFY COLUMN payment_method ENUM('cash', 'card', 'insurance_credit') 

@@ -1,9 +1,9 @@
--- Migration: Create Patients table
+-- Migration: Create patients table
 -- Stores patient-specific information including passport and insurance details
 -- Links to Users table with 1:1 relationship
 -- Created: Phase 1
 
-CREATE TABLE Patients (
+CREATE TABLE IF NOT EXISTS patients (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT UNIQUE NOT NULL,
     passport_info JSON COMMENT 'Passport details: {number, country, expiry_date, issue_date, place_of_issue}',
@@ -14,17 +14,17 @@ CREATE TABLE Patients (
     
     -- Foreign key constraint
     CONSTRAINT fk_patients_user_id 
-        FOREIGN KEY (user_id) REFERENCES Users(id) 
+        FOREIGN KEY (user_id) REFERENCES users(id) 
         ON DELETE CASCADE 
         ON UPDATE CASCADE
 );
 
 -- Indexes for performance
-CREATE INDEX idx_patients_user_id ON Patients(user_id);
-CREATE INDEX idx_patients_created_at ON Patients(created_at);
+CREATE INDEX idx_patients_user_id ON patients(user_id);
+CREATE INDEX idx_patients_created_at ON patients(created_at);
 
 -- Table comment
-ALTER TABLE Patients COMMENT = 'Patient-specific information including travel documents and insurance';
+ALTER TABLE patients COMMENT = 'Patient-specific information including travel documents and insurance';
 
 -- Sample JSON structure comments for reference:
 -- passport_info example:
