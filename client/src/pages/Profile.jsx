@@ -28,11 +28,12 @@ const Profile = () => {
   // Initialize profile data when user is loaded
   useEffect(() => {
     if (user) {
+      const dobStr = user.dateOfBirth ? new Date(user.dateOfBirth).toISOString().slice(0, 10) : '';
       const userData = {
         fullName: user.fullName || '',
         email: user.email || '',
         phoneNumber: user.phoneNumber || '',
-        dateOfBirth: user.dateOfBirth ? user.dateOfBirth.split('T')[0] : '',
+        dateOfBirth: dobStr,
         address: user.address || '',
         emergencyContact: user.emergencyContact || ''
       };

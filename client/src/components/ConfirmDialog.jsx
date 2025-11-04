@@ -1,4 +1,5 @@
 import React from 'react';
+import ReactDOM from 'react-dom';
 import './ConfirmDialog.css';
 
 /**
@@ -46,7 +47,7 @@ const ConfirmDialog = ({
     }
   };
 
-  return (
+  const dialogContent = (
     <div className="confirm-dialog-overlay" onClick={handleBackdropClick}>
       <div className={`confirm-dialog confirm-dialog--${variant}`}>
         <div className="confirm-dialog__header">
@@ -92,6 +93,8 @@ const ConfirmDialog = ({
       </div>
     </div>
   );
+
+  return ReactDOM.createPortal(dialogContent, document.body);
 };
 
 export default ConfirmDialog;

@@ -74,6 +74,27 @@ class UserService {
   }
 
   /**
+   * Get user by ID including inactive users
+   * @param {number} userId - User ID
+   * @returns {object} User object without password or null if not found
+   */
+  static async getUserByIdIncludeInactive(userId) {
+    try {
+      const user = await User.findByIdIncludeInactive(userId);
+      
+      if (!user) {
+        return null;
+      }
+
+      // Remove password_hash from returned user
+      const { passwordHash, ...userWithoutPassword } = user;
+      return userWithoutPassword;
+    } catch (error) {
+      throw new AppError(`Error fetching user: ${error.message}`, 500);
+    }
+  }
+
+  /**
    * Create new user (admin operation - allows any role)
    * @param {object} userData - User data
    * @returns {object} Created user without password
@@ -194,7 +215,7 @@ class UserService {
    */
   static async deactivateUser(userId) {
     try {
-      const user = await User.findById(userId);
+      const user = await User.findByIdIncludeInactive(userId);
       if (!user) {
         throw new AppError('User not found', 404);
       }

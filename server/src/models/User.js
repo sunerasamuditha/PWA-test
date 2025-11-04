@@ -336,10 +336,10 @@ class User {
       const countResult = await executeQuery(countSql, queryParams);
       const total = countResult[0].total;
 
-      // Get paginated results
+      // Get paginated results (exclude password_hash from list)
       const offset = (page - 1) * limit;
       const sql = `
-        SELECT id, uuid, full_name, email, password_hash, role, phone_number, 
+        SELECT id, uuid, full_name, email, role, phone_number, 
                date_of_birth, address, emergency_contact, is_active, 
                created_at, updated_at
         FROM users 
@@ -368,7 +368,7 @@ class User {
   static async searchByNameOrEmail(searchTerm) {
     try {
       const sql = `
-        SELECT id, uuid, full_name, email, password_hash, role, phone_number, 
+        SELECT id, uuid, full_name, email, role, phone_number, 
                date_of_birth, address, emergency_contact, is_active, 
                created_at, updated_at
         FROM users 
@@ -408,45 +408,6 @@ class User {
       return user;
     } catch (error) {
       throw new Error(`Error finding user by ID: ${error.message}`);
-    }
-  }
-
-  /**
-   * Count users matching filters
-   * @param {object} filters - Filter options
-   * @returns {number} Count of matching users
-   */
-  static async countUsers(filters = {}) {
-    try {
-      const { search = '', role = '', isActive = null } = filters;
-
-      let whereConditions = [];
-      let queryParams = [];
-
-      if (search) {
-        whereConditions.push('(full_name LIKE ? OR email LIKE ?)');
-        queryParams.push(`%${search}%`, `%${search}%`);
-      }
-
-      if (role) {
-        whereConditions.push('role = ?');
-        queryParams.push(role);
-      }
-
-      if (isActive !== null) {
-        whereConditions.push('is_active = ?');
-        queryParams.push(isActive ? 1 : 0);
-      }
-
-      const whereClause = whereConditions.length > 0 ? 
-        `WHERE ${whereConditions.join(' AND ')}` : '';
-
-      const sql = `SELECT COUNT(*) as total FROM users ${whereClause}`;
-      const result = await executeQuery(sql, queryParams);
-      
-      return result[0].total;
-    } catch (error) {
-      throw new Error(`Error counting users: ${error.message}`);
     }
   }
 

@@ -30,12 +30,13 @@ const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }) => {
   // Initialize form data when user prop changes
   useEffect(() => {
     if (user && isOpen) {
+      const dobStr = user.dateOfBirth ? new Date(user.dateOfBirth).toISOString().slice(0, 10) : '';
       const userData = {
         fullName: user.fullName || '',
         email: user.email || '',
         role: user.role || 'patient',
         phoneNumber: user.phoneNumber || '',
-        dateOfBirth: user.dateOfBirth ? user.dateOfBirth.split('T')[0] : '',
+        dateOfBirth: dobStr,
         address: user.address || '',
         emergencyContact: user.emergencyContact || '',
         isActive: user.isActive !== undefined ? user.isActive : true
@@ -236,12 +237,13 @@ const EditUserModal = ({ isOpen, onClose, onUserUpdated, user }) => {
     if (!isSubmitting) {
       // Reset form when closing
       if (user) {
+        const dobStr = user.dateOfBirth ? new Date(user.dateOfBirth).toISOString().slice(0, 10) : '';
         const userData = {
           fullName: user.fullName || '',
           email: user.email || '',
           role: user.role || 'patient',
           phoneNumber: user.phoneNumber || '',
-          dateOfBirth: user.dateOfBirth ? user.dateOfBirth.split('T')[0] : '',
+          dateOfBirth: dobStr,
           address: user.address || '',
           emergencyContact: user.emergencyContact || '',
           isActive: user.isActive !== undefined ? user.isActive : true
