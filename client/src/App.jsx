@@ -14,6 +14,9 @@ import Profile from './pages/Profile.jsx';
 import ChangePassword from './pages/ChangePassword.jsx';
 import Unauthorized from './pages/Unauthorized.jsx';
 import UserManagement from './pages/admin/UserManagement.jsx';
+import PatientManagement from './pages/admin/PatientManagement.jsx';
+import PartnerManagement from './pages/admin/PartnerManagement.jsx';
+import StaffManagement from './pages/admin/StaffManagement.jsx';
 import PatientProfile from './pages/PatientProfile.jsx';
 import HealthHistory from './pages/HealthHistory.jsx';
 import PartnerProfile from './pages/PartnerProfile.jsx';
@@ -79,6 +82,21 @@ function App() {
                 <Route path="/admin/users" element={
                   <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
                     <UserManagement />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/patients" element={
+                  <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                    <PatientManagement />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/partners" element={
+                  <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                    <PartnerManagement />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/staff" element={
+                  <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                    <StaffManagement />
                   </ProtectedRoute>
                 } />
                 
@@ -167,7 +185,12 @@ function NavigationLinks() {
           <Link to="/dashboard" className="nav-link">Dashboard</Link>
           <Link to="/profile" className="nav-link">Profile</Link>
           {['admin', 'super_admin'].includes(user.role) && (
-            <Link to="/admin/users" className="nav-link">Users</Link>
+            <>
+              <Link to="/admin/users" className="nav-link">Users</Link>
+              <Link to="/admin/patients" className="nav-link">Patients</Link>
+              <Link to="/admin/partners" className="nav-link">Partners</Link>
+              <Link to="/admin/staff" className="nav-link">Staff</Link>
+            </>
           )}
           <button onClick={handleLogout} className="nav-link nav-button">Logout</button>
         </>

@@ -110,7 +110,25 @@ const PatientManagement = () => {
 
   // Handle view patient details
   const handleViewPatient = (patient) => {
-    setSelectedPatient(patient);
+    // Normalize patient data to match the structure expected by PatientDetailsModal
+    const normalizedPatient = {
+      ...patient,
+      // Map passport info fields
+      hasPassport: !!patient.passportInfo,
+      passportNumber: patient.passportInfo?.number || patient.passportInfo?.passportNumber || null,
+      passportExpiry: patient.passportInfo?.expiryDate || patient.passportInfo?.passportExpiry || null,
+      visaStatus: patient.passportInfo?.visaStatus || null,
+      // Map insurance info fields
+      hasInsurance: !!patient.insuranceInfo,
+      insuranceProvider: patient.insuranceInfo?.provider || patient.insuranceInfo?.insuranceProvider || null,
+      insurancePolicyNumber: patient.insuranceInfo?.policyNumber || patient.insuranceInfo?.insurancePolicyNumber || null,
+      insuranceCoverage: patient.insuranceInfo?.coverage || patient.insuranceInfo?.insuranceCoverage || null,
+      // Keep original nested objects for other uses
+      passportInfo: patient.passportInfo,
+      insuranceInfo: patient.insuranceInfo
+    };
+    
+    setSelectedPatient(normalizedPatient);
     setShowDetailsModal(true);
   };
 

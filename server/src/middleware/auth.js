@@ -209,8 +209,13 @@ const requirePermission = (requiredPermissions) => {
       throw new AppError('Authentication required', 401);
     }
 
+    // Super admins bypass all permission checks
+    if (req.user.role === 'super_admin') {
+      return next();
+    }
+
     // Admins have all permissions
-    if (req.user.role === 'admin' || req.user.role === 'super_admin') {
+    if (req.user.role === 'admin') {
       return next();
     }
 
@@ -262,6 +267,11 @@ const authorizeRoleOrPermission = (allowedRoles, allowedPermissions) => {
   return asyncHandler(async (req, res, next) => {
     if (!req.user) {
       throw new AppError('Authentication required', 401);
+    }
+
+    // Super admins bypass all checks
+    if (req.user.role === 'super_admin') {
+      return next();
     }
 
     // Check if user has one of the allowed roles

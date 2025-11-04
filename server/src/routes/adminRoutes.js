@@ -20,6 +20,37 @@ router.get('/dashboard/stats',
 );
 
 /**
+ * @route GET /api/admin/statistics
+ * @desc Get dashboard statistics (alias for /dashboard/stats)
+ * @access Admin only
+ */
+router.get('/statistics',
+  auditAccess('Admin'),
+  AdminController.getDashboardStats
+);
+
+/**
+ * @route GET /api/admin/growth
+ * @desc Get user registration growth analytics (alias for /analytics/users)
+ * @access Admin only
+ */
+router.get('/growth',
+  auditAccess('Admin'),
+  AdminController.getUserActivityAnalytics
+);
+
+/**
+ * @route GET /api/admin/activity
+ * @desc Get recent system activity
+ * @query limit - Maximum number of activities to return (default: 20)
+ * @access Admin only
+ */
+router.get('/activity',
+  auditAccess('Admin'),
+  AdminController.getRecentActivity
+);
+
+/**
  * @route GET /api/admin/analytics/revenue
  * @desc Get revenue analytics
  * @query period - Time period (week, month, quarter, year)

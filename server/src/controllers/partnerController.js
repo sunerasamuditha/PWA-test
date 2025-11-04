@@ -165,6 +165,44 @@ const getPartnerById = async (req, res, next) => {
 };
 
 /**
+ * Get partner referrals by partner ID (admin only)
+ */
+const getPartnerReferralsById = async (req, res, next) => {
+  try {
+    const { partnerId } = req.params;
+    const { page = 1, limit = 10, status, sortBy = 'created_at', sortOrder = 'desc' } = req.query;
+    
+    const filters = {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      sortBy,
+      sortOrder
+    };
+    
+    if (status) {
+      filters.status = status;
+    }
+    
+    // Get partner info first to get user_id
+    const Partner = require('../models/Partner');
+    const partner = await Partner.findById(partnerId);
+    
+    if (!partner) {
+      throw new AppError('Partner not found', 404);
+    }
+    
+    const referrals = await PartnerService.getPartnerReferrals(partner.user_id, filters);
+    
+    res.json({
+      success: true,
+      data: referrals
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Update partner status (admin only)
  */
 const updatePartnerStatus = async (req, res, next) => {
@@ -227,6 +265,7 @@ module.exports = {
   getPartnerStats,
   getAllPartners,
   getPartnerById,
+  getPartnerReferralsById,
   updatePartnerStatus,
   getCommissionHistory
 };

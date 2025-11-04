@@ -99,7 +99,7 @@ class AdminService {
           FROM \`Appointments\`
         `;
         
-        const [rows] = await executeQuery(appointmentStatsQuery, [businessTimezone, businessTimezone]);
+        const rows = await executeQuery(appointmentStatsQuery, [businessTimezone, businessTimezone]);
         stats.appointments = rows[0] || {
           total_appointments: 0,
           scheduled_appointments: 0,
@@ -140,20 +140,20 @@ class AdminService {
           FROM Payments
         `;
         
-        const [paymentStats] = await executeQuery(paymentStatsQuery);
+        const rows = await executeQuery(paymentStatsQuery);
         stats.payments = {
-          total_payments: paymentStats[0].total_payments || 0,
-          total_revenue: parseFloat(paymentStats[0].total_revenue || 0),
-          completed_payments: paymentStats[0].completed_payments || 0,
-          completed_revenue: parseFloat(paymentStats[0].completed_revenue || 0),
-          pending_payments: paymentStats[0].pending_payments || 0,
-          pending_revenue: parseFloat(paymentStats[0].pending_revenue || 0),
-          payments_today: paymentStats[0].payments_today || 0,
-          revenue_today: parseFloat(paymentStats[0].revenue_today || 0),
-          payments_week: paymentStats[0].payments_week || 0,
-          revenue_week: parseFloat(paymentStats[0].revenue_week || 0),
-          payments_month: paymentStats[0].payments_month || 0,
-          revenue_month: parseFloat(paymentStats[0].revenue_month || 0)
+          total_payments: rows[0].total_payments || 0,
+          total_revenue: parseFloat(rows[0].total_revenue || 0),
+          completed_payments: rows[0].completed_payments || 0,
+          completed_revenue: parseFloat(rows[0].completed_revenue || 0),
+          pending_payments: rows[0].pending_payments || 0,
+          pending_revenue: parseFloat(rows[0].pending_revenue || 0),
+          payments_today: rows[0].payments_today || 0,
+          revenue_today: parseFloat(rows[0].revenue_today || 0),
+          payments_week: rows[0].payments_week || 0,
+          revenue_week: parseFloat(rows[0].revenue_week || 0),
+          payments_month: rows[0].payments_month || 0,
+          revenue_month: parseFloat(rows[0].revenue_month || 0)
         };
       } catch (error) {
         console.warn('Payments table not found, skipping payment statistics');
@@ -195,15 +195,15 @@ class AdminService {
           ) p ON i.id = p.invoice_id
         `;
         
-        const [invoiceStats] = await executeQuery(invoiceStatsQuery);
+        const rows = await executeQuery(invoiceStatsQuery);
         stats.invoices = {
-          totalInvoices: invoiceStats[0].total_invoices || 0,
-          pendingCount: invoiceStats[0].pending_invoices || 0,
-          paidCount: invoiceStats[0].paid_invoices || 0,
-          overdueCount: invoiceStats[0].overdue_invoices || 0,
-          partiallyPaidCount: invoiceStats[0].partially_paid_invoices || 0,
-          totalBilled: parseFloat(invoiceStats[0].total_billed || 0),
-          totalOutstanding: parseFloat(invoiceStats[0].total_outstanding || 0)
+          totalInvoices: rows[0].total_invoices || 0,
+          pendingCount: rows[0].pending_invoices || 0,
+          paidCount: rows[0].paid_invoices || 0,
+          overdueCount: rows[0].overdue_invoices || 0,
+          partiallyPaidCount: rows[0].partially_paid_invoices || 0,
+          totalBilled: parseFloat(rows[0].total_billed || 0),
+          totalOutstanding: parseFloat(rows[0].total_outstanding || 0)
         };
       } catch (error) {
         console.warn('Invoices table not found, skipping invoice statistics');
@@ -256,14 +256,14 @@ class AdminService {
       // Get shift statistics (with error handling for missing table)
       try {
         // Staff currently on shift
-        const [currentlyOnShiftResult] = await executeQuery(`
+        const [currentlyOnShiftRow] = await executeQuery(`
           SELECT COUNT(*) as count
           FROM Staff_Shifts
           WHERE logout_at IS NULL
         `);
         
         // Total shifts and hours today
-        const [todayStatsResult] = await executeQuery(`
+        const [todayStatsRow] = await executeQuery(`
           SELECT 
             COUNT(*) as total_shifts,
             COALESCE(SUM(total_hours), 0) as total_hours
@@ -272,7 +272,7 @@ class AdminService {
         `);
         
         // Total shifts and hours this week
-        const [weekStatsResult] = await executeQuery(`
+        const [weekStatsRow] = await executeQuery(`
           SELECT 
             COUNT(*) as total_shifts,
             COALESCE(SUM(total_hours), 0) as total_hours
@@ -281,7 +281,7 @@ class AdminService {
         `);
         
         // Total shifts and hours this month
-        const [monthStatsResult] = await executeQuery(`
+        const [monthStatsRow] = await executeQuery(`
           SELECT 
             COUNT(*) as total_shifts,
             COALESCE(SUM(total_hours), 0) as total_hours
@@ -290,7 +290,7 @@ class AdminService {
         `);
         
         // Hours by shift type (last 30 days)
-        const [shiftsByType] = await executeQuery(`
+        const shiftsByType = await executeQuery(`
           SELECT 
             shift_type,
             COUNT(*) as shift_count,
@@ -309,13 +309,13 @@ class AdminService {
         });
         
         stats.shifts = {
-          staff_currently_on_shift: currentlyOnShiftResult[0].count,
-          total_shifts_today: todayStatsResult[0].total_shifts,
-          total_hours_today: parseFloat(todayStatsResult[0].total_hours),
-          total_shifts_week: weekStatsResult[0].total_shifts,
-          total_hours_week: parseFloat(weekStatsResult[0].total_hours),
-          total_shifts_month: monthStatsResult[0].total_shifts,
-          total_hours_month: parseFloat(monthStatsResult[0].total_hours),
+          staff_currently_on_shift: currentlyOnShiftRow.count,
+          total_shifts_today: todayStatsRow.total_shifts,
+          total_hours_today: parseFloat(todayStatsRow.total_hours),
+          total_shifts_week: weekStatsRow.total_shifts,
+          total_hours_week: parseFloat(weekStatsRow.total_hours),
+          total_shifts_month: monthStatsRow.total_shifts,
+          total_hours_month: parseFloat(monthStatsRow.total_hours),
           shifts_by_type: hoursByShiftType
         };
       } catch (error) {
@@ -348,15 +348,15 @@ class AdminService {
         
         const [entitiesStats] = await executeQuery(entitiesStatsQuery);
         stats.externalEntities = {
-          totalEntities: entitiesStats[0].total_entities || 0,
+          totalEntities: entitiesStats.total_entities || 0,
           byType: {
-            hospital: entitiesStats[0].hospitals || 0,
-            lab: entitiesStats[0].labs || 0,
-            supplier: entitiesStats[0].suppliers || 0,
-            insurance_company: entitiesStats[0].insurance_companies || 0,
-            other: entitiesStats[0].other_entities || 0
+            hospital: entitiesStats.hospitals || 0,
+            lab: entitiesStats.labs || 0,
+            supplier: entitiesStats.suppliers || 0,
+            insurance_company: entitiesStats.insurance_companies || 0,
+            other: entitiesStats.other_entities || 0
           },
-          newEntitiesMonth: entitiesStats[0].new_entities_month || 0
+          newEntitiesMonth: entitiesStats.new_entities_month || 0
         };
       } catch (error) {
         console.warn('External_Entities table not found, skipping external entities statistics');
@@ -417,16 +417,16 @@ class AdminService {
         });
         
         stats.accountsPayable = {
-          totalPayables: payablesStats[0].total_payables || 0,
-          dueCount: payablesStats[0].due_count || 0,
-          paidCount: payablesStats[0].paid_count || 0,
-          overdueCount: payablesStats[0].overdue_count || 0,
-          totalAmount: parseFloat(payablesStats[0].total_amount || 0),
-          dueAmount: parseFloat(payablesStats[0].due_amount || 0),
-          paidAmount: parseFloat(payablesStats[0].paid_amount || 0),
-          overdueAmount: parseFloat(payablesStats[0].overdue_amount || 0),
-          dueSoonCount: payablesStats[0].due_soon_count || 0,
-          dueSoonAmount: parseFloat(payablesStats[0].due_soon_amount || 0),
+          totalPayables: payablesStats.total_payables || 0,
+          dueCount: payablesStats.due_count || 0,
+          paidCount: payablesStats.paid_count || 0,
+          overdueCount: payablesStats.overdue_count || 0,
+          totalAmount: parseFloat(payablesStats.total_amount || 0),
+          dueAmount: parseFloat(payablesStats.due_amount || 0),
+          paidAmount: parseFloat(payablesStats.paid_amount || 0),
+          overdueAmount: parseFloat(payablesStats.overdue_amount || 0),
+          dueSoonCount: payablesStats.due_soon_count || 0,
+          dueSoonAmount: parseFloat(payablesStats.due_soon_amount || 0),
           byEntityType: byEntityType
         };
       } catch (error) {
@@ -486,7 +486,7 @@ class AdminService {
           FROM Audit_Logs
         `;
         
-        const [auditStats] = await executeQuery(auditStatsQuery);
+        const [auditStatsRow] = await executeQuery(auditStatsQuery);
         
         const topEntitiesQuery = `
           SELECT 
@@ -499,7 +499,7 @@ class AdminService {
           LIMIT 5
         `;
         
-        const [topEntities] = await executeQuery(topEntitiesQuery);
+        const topEntities = await executeQuery(topEntitiesQuery);
 
         // Get recent critical actions
         const criticalActionsQuery = `
@@ -521,7 +521,7 @@ class AdminService {
           LIMIT 5
         `;
         
-        const [criticalActions] = await executeQuery(criticalActionsQuery);
+        const criticalActions = await executeQuery(criticalActionsQuery);
 
         // Get recent failed logins (last 24 hours)
         const failedLoginsQuery = `
@@ -548,19 +548,19 @@ class AdminService {
           LIMIT 10
         `;
         
-        const [failedLogins] = await executeQuery(failedLoginsQuery);
+        const failedLogins = await executeQuery(failedLoginsQuery);
         
         stats.auditLogs = {
-          totalLogs: auditStats[0].total_logs || 0,
-          createActions: auditStats[0].create_actions || 0,
-          updateActions: auditStats[0].update_actions || 0,
-          deleteActions: auditStats[0].delete_actions || 0,
-          loginActions: auditStats[0].login_actions || 0,
-          logoutActions: auditStats[0].logout_actions || 0,
-          accessActions: auditStats[0].access_actions || 0,
-          logsToday: auditStats[0].logs_today || 0,
-          logsWeek: auditStats[0].logs_week || 0,
-          logsMonth: auditStats[0].logs_month || 0,
+          totalLogs: auditStatsRow.total_logs || 0,
+          createActions: auditStatsRow.create_actions || 0,
+          updateActions: auditStatsRow.update_actions || 0,
+          deleteActions: auditStatsRow.delete_actions || 0,
+          loginActions: auditStatsRow.login_actions || 0,
+          logoutActions: auditStatsRow.logout_actions || 0,
+          accessActions: auditStatsRow.access_actions || 0,
+          logsToday: auditStatsRow.logs_today || 0,
+          logsWeek: auditStatsRow.logs_week || 0,
+          logsMonth: auditStatsRow.logs_month || 0,
           topEntities: topEntities,
           criticalActions: criticalActions,
           failedLogins: failedLogins
@@ -629,8 +629,8 @@ class AdminService {
           DATE_FORMAT(created_at, '${dateFormat}') as date,
           COUNT(*) as payment_count,
           SUM(amount) as total_revenue,
-          SUM(CASE WHEN status = 'completed' THEN amount ELSE 0 END) as completed_revenue,
-          COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_count
+          SUM(CASE WHEN payment_status = 'completed' THEN amount ELSE 0 END) as completed_revenue,
+          COUNT(CASE WHEN payment_status = 'completed' THEN 1 END) as completed_count
         FROM \`Payments\` 
         WHERE ${dateFilter}
         AND deleted_at IS NULL
@@ -735,6 +735,51 @@ class AdminService {
       };
     } catch (error) {
       console.error('Error getting user activity analytics:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get recent activity
+   * @param {number} limit - Maximum number of activities to return
+   * @returns {Object} Recent activity data
+   */
+  static async getRecentActivity(limit = 20) {
+    try {
+      // Reuse the recent activity query from getDashboardStats
+      const recentActivityQuery = `
+        (
+          SELECT 
+            'user_registration' as type,
+            CONCAT('New user registered: ', full_name) as description,
+            created_at as timestamp
+          FROM \`Users\` 
+          WHERE created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+          AND deleted_at IS NULL
+        )
+        ORDER BY timestamp DESC
+        LIMIT ?
+      `;
+      
+      try {
+        const recentActivity = await executeQuery(recentActivityQuery, [limit]);
+        return {
+          activities: recentActivity,
+          count: recentActivity.length,
+          limit: limit,
+          timeWindow: '24 hours'
+        };
+      } catch (error) {
+        console.warn('Error fetching recent activity:', error.message);
+        return {
+          activities: [],
+          count: 0,
+          limit: limit,
+          timeWindow: '24 hours'
+        };
+      }
+    } catch (error) {
+      console.error('Error getting recent activity:', error);
       throw error;
     }
   }

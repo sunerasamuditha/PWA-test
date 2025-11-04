@@ -106,6 +106,42 @@ class AdminController {
   }
 
   /**
+   * Get recent activity
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   */
+  static async getRecentActivity(req, res) {
+    try {
+      const limit = parseInt(req.query.limit) || 20;
+      
+      // Validate limit
+      if (limit < 1 || limit > 100) {
+        throw new AppError('Limit must be between 1 and 100', 400);
+      }
+
+      const activities = await AdminService.getRecentActivity(limit);
+
+      res.status(200).json({
+        success: true,
+        message: 'Recent activity retrieved successfully',
+        data: activities
+      });
+    } catch (error) {
+      console.error('Error in getRecentActivity:', error);
+      if (error instanceof AppError) {
+        return res.status(error.statusCode).json({
+          success: false,
+          message: error.message
+        });
+      }
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  /**
    * Get system health metrics
    * @param {Object} req - Express request object
    * @param {Object} res - Express response object

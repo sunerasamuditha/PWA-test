@@ -10,8 +10,8 @@ const validateStaffCreate = [
     .withMessage('Full name is required')
     .isLength({ min: 2, max: 100 })
     .withMessage('Full name must be between 2 and 100 characters')
-    .matches(/^[a-zA-Z\s]+$/)
-    .withMessage('Full name can only contain letters and spaces'),
+    .matches(/^[a-zA-Z\s'-]+$/)
+    .withMessage('Full name can only contain letters, spaces, hyphens, and apostrophes'),
 
   body('userData.email')
     .isEmail()
@@ -19,6 +19,7 @@ const validateStaffCreate = [
     .normalizeEmail(),
 
   body('userData.phoneNumber')
+    .optional()
     .matches(/^\+?[\d\s\-\(\)]+$/)
     .withMessage('Valid phone number is required')
     .isLength({ min: 10, max: 20 })
@@ -27,7 +28,7 @@ const validateStaffCreate = [
   body('userData.password')
     .isLength({ min: 8 })
     .withMessage('Password must be at least 8 characters long')
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/)
     .withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
 
   body('userData.dateOfBirth')
@@ -108,8 +109,8 @@ const validateStaffUpdate = [
     .optional()
     .isLength({ min: 2, max: 100 })
     .withMessage('Full name must be between 2 and 100 characters')
-    .matches(/^[a-zA-Z\s]+$/)
-    .withMessage('Full name can only contain letters and spaces'),
+    .matches(/^[a-zA-Z\s'-]+$/)
+    .withMessage('Full name can only contain letters, spaces, hyphens, and apostrophes'),
 
   body('phoneNumber')
     .optional()
@@ -239,8 +240,8 @@ const validateStaffProfileUpdate = [
     .optional()
     .isLength({ min: 2, max: 100 })
     .withMessage('Full name must be between 2 and 100 characters')
-    .matches(/^[a-zA-Z\s]+$/)
-    .withMessage('Full name can only contain letters and spaces'),
+    .matches(/^[a-zA-Z\s'-]+$/)
+    .withMessage('Full name can only contain letters, spaces, hyphens, and apostrophes'),
 
   body('phoneNumber')
     .optional()

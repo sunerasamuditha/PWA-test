@@ -122,6 +122,17 @@ router.get('/:userId',
 );
 
 /**
+ * @route   GET /api/partners/:partnerId/referrals
+ * @desc    Get partner referrals by partner ID (admin only)
+ * @access  Private (Admin only)
+ */
+router.get('/:partnerId/referrals',
+  authenticate,
+  authorize('admin', 'super_admin'),
+  partnerController.getPartnerReferralsById
+);
+
+/**
  * @route   PUT /api/partners/:partnerId/status
  * @desc    Update partner status (admin only)
  * @access  Private (Admin only)
