@@ -111,6 +111,18 @@ app.use('/api', routes);
 // - GET /api/documents/:id/view - for inline preview
 // This ensures proper access control and audit logging for all document access.
 
+// Redirect old /uploads/* URLs to informative error page
+app.get('/uploads/*', (req, res) => {
+  res.status(410).json({
+    status: 'error',
+    error: {
+      message: 'Direct file access has been disabled for security reasons. Please access documents through the application.',
+      code: 'DIRECT_ACCESS_DISABLED',
+      details: 'Documents are now served through authenticated endpoints. Please use the document management features in the application to view or download files.'
+    }
+  });
+});
+
 // 404 handler for undefined routes
 app.use('*', notFound);
 

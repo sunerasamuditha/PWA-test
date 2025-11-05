@@ -27,7 +27,7 @@ class Invoice {
       WHERE i.id = ?
     `;
     
-    const [rows] = await executeQuery(query, [id], connection);
+    const rows = await executeQuery(query, [id], connection);
     if (rows.length === 0) return null;
 
     const invoice = this._transformInvoice(rows[0]);
@@ -44,7 +44,7 @@ class Invoice {
       ORDER BY ii.id
     `;
     
-    const [itemRows] = await executeQuery(itemsQuery, [id], connection);
+    const itemRows = await executeQuery(itemsQuery, [id], connection);
     invoice.items = itemRows.map(item => this._transformInvoiceItem(item));
 
     return invoice;
@@ -75,7 +75,7 @@ class Invoice {
       WHERE i.id IN (${placeholders})
     `;
     
-    const [rows] = await executeQuery(query, ids, connection);
+    const rows = await executeQuery(query, ids, connection);
     return rows.map(row => this._transformInvoice(row));
   }
 
@@ -126,8 +126,8 @@ class Invoice {
 
     // Build count query explicitly
     const countQuery = `SELECT COUNT(*) as total ${fromWhereClause}`;
-    const [countResult] = await executeQuery(countQuery, params);
-    const total = countResult[0].total;
+    const countRows = await executeQuery(countQuery, params);
+    const total = countRows[0].total;
 
     // Build data query explicitly
     let dataQuery = `
@@ -150,7 +150,7 @@ class Invoice {
     dataQuery += ' LIMIT ? OFFSET ?';
     params.push(parseInt(limit), parseInt(offset));
 
-    const [rows] = await executeQuery(dataQuery, params);
+    const rows = await executeQuery(dataQuery, params);
     const invoices = rows.map(row => this._transformInvoice(row));
 
     return {
@@ -199,7 +199,7 @@ class Invoice {
       due_date
     ];
 
-    const [result] = await executeQuery(query, params, connection);
+    const result = await executeQuery(query, params, connection);
     return this.findById(result.insertId, connection);
   }
 
@@ -297,8 +297,8 @@ class Invoice {
 
     // Build count query explicitly
     const countQuery = `SELECT COUNT(*) as total ${fromWhereClause}`;
-    const [countResult] = await executeQuery(countQuery, params);
-    const total = countResult[0].total;
+    const countRows = await executeQuery(countQuery, params);
+    const total = countRows[0].total;
 
     // Build data query explicitly
     let dataQuery = `
@@ -323,7 +323,7 @@ class Invoice {
     dataQuery += ' LIMIT ? OFFSET ?';
     params.push(parseInt(limit), parseInt(offset));
 
-    const [rows] = await executeQuery(dataQuery, params);
+    const rows = await executeQuery(dataQuery, params);
     const invoices = rows.map(row => this._transformInvoice(row));
 
     return {
@@ -358,7 +358,7 @@ class Invoice {
       GROUP BY i.id, i.total_amount
     `;
     
-    const [rows] = await executeQuery(query, [id], connection);
+    const rows = await executeQuery(query, [id], connection);
     if (rows.length === 0) return null;
 
     const totalAmount = parseFloat(rows[0].total_amount);
@@ -384,7 +384,7 @@ class Invoice {
       ORDER BY i.due_date ASC
     `;
     
-    const [rows] = await executeQuery(query);
+    const rows = await executeQuery(query);
     return rows.map(row => this._transformInvoice(row));
   }
 

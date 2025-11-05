@@ -78,6 +78,11 @@ class AccountsPayableController {
    */
   static updatePayable = asyncHandler(async (req, res) => {
     const payableId = parseInt(req.params.id);
+    
+    // Capture before state
+    const beforePayable = await AccountsPayableService.getPayableById(payableId);
+    res.locals.beforeData = beforePayable;
+    
     const { reference_code, description, total_amount, due_date, status, payment_method, notes } = req.body;
 
     const payable = await AccountsPayableService.updatePayable(
@@ -86,7 +91,8 @@ class AccountsPayableController {
       req.user.id
     );
 
-    // Store for audit logging
+    // Capture after state and store for audit logging
+    res.locals.afterData = payable;
     res.locals.payable = payable;
 
     res.status(200).json({

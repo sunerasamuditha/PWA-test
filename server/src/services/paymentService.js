@@ -187,7 +187,7 @@ class PaymentService {
       FROM Payments
       WHERE invoice_id = ? AND payment_status = 'pending'
     `;
-    const [rows] = await executeQuery(query, [invoiceId], connection);
+    const rows = await executeQuery(query, [invoiceId], connection);
     const pendingAmount = parseFloat(rows[0]?.pending_amount || 0);
 
     const amount = parseFloat(paymentAmount);

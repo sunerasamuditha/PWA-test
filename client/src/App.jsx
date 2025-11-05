@@ -6,6 +6,7 @@ import PublicRoute from './components/PublicRoute.jsx';
 import OfflineIndicator from './components/OfflineIndicator.jsx';
 import InstallPrompt from './components/InstallPrompt.jsx';
 import UpdateNotification from './components/UpdateNotification.jsx';
+import NotificationPermissionPrompt from './components/NotificationPermissionPrompt.jsx';
 import Home from './pages/Home.jsx';
 import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
@@ -17,6 +18,8 @@ import UserManagement from './pages/admin/UserManagement.jsx';
 import PatientManagement from './pages/admin/PatientManagement.jsx';
 import PartnerManagement from './pages/admin/PartnerManagement.jsx';
 import StaffManagement from './pages/admin/StaffManagement.jsx';
+import ExternalEntityManagement from './pages/admin/ExternalEntityManagement.jsx';
+import AccountsPayableManagement from './pages/admin/AccountsPayableManagement.jsx';
 import PatientProfile from './pages/PatientProfile.jsx';
 import HealthHistory from './pages/HealthHistory.jsx';
 import PartnerProfile from './pages/PartnerProfile.jsx';
@@ -31,6 +34,9 @@ import InvoiceCreation from './pages/InvoiceCreation.jsx';
 import ServiceManagement from './pages/admin/ServiceManagement.jsx';
 import StaffShiftHistory from './pages/StaffShiftHistory.jsx';
 import ShiftManagement from './pages/admin/ShiftManagement.jsx';
+import Settings from './pages/Settings.jsx';
+import AuditLogViewer from './pages/admin/AuditLogViewer.jsx';
+import MyAuditTrail from './pages/MyAuditTrail.jsx';
 import './App.css';
 
 function App() {
@@ -42,6 +48,7 @@ function App() {
             <OfflineIndicator />
             <InstallPrompt />
             <UpdateNotification />
+            <NotificationPermissionPrompt />
             
             <header className="app-header">
               <nav className="nav">
@@ -176,6 +183,35 @@ function App() {
                     <ShiftManagement />
                   </ProtectedRoute>
                 } />
+                <Route path="/admin/external-entities" element={
+                  <ProtectedRoute allowedRoles={['admin', 'super_admin']} requiredPermissions={['process_payments']}>
+                    <ExternalEntityManagement />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/accounts-payable" element={
+                  <ProtectedRoute allowedRoles={['admin', 'super_admin']} requiredPermissions={['process_payments']}>
+                    <AccountsPayableManagement />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Settings */}
+                <Route path="/settings" element={
+                  <ProtectedRoute>
+                    <Settings />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Phase 13: Audit Logs */}
+                <Route path="/admin/audit-logs" element={
+                  <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                    <AuditLogViewer />
+                  </ProtectedRoute>
+                } />
+                <Route path="/my-audit-trail" element={
+                  <ProtectedRoute>
+                    <MyAuditTrail />
+                  </ProtectedRoute>
+                } />
                 
                 {/* Phase 6: Admin Features
                 <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><UserManagement /></ProtectedRoute>} />
@@ -240,8 +276,10 @@ function NavigationLinks() {
               <Link to="/admin/patients" className="nav-link">Patients</Link>
               <Link to="/admin/partners" className="nav-link">Partners</Link>
               <Link to="/admin/staff" className="nav-link">Staff</Link>
+              <Link to="/admin/audit-logs" className="nav-link">Audit Logs</Link>
             </>
           )}
+          <Link to="/my-audit-trail" className="nav-link">My Activity</Link>
           <button onClick={handleLogout} className="nav-link nav-button">Logout</button>
         </>
       ) : (

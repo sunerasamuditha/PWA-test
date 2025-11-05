@@ -168,8 +168,9 @@ function isEncrypted(value) {
 
 /**
  * Encrypt a field value if not already encrypted
+ * In development without ENCRYPTION_KEY, returns plaintext (no-op)
  * @param {any} value - Value to encrypt
- * @returns {object|null} Encrypted object or null if value is null/undefined
+ * @returns {object|string|null} Encrypted object, plaintext (dev mode), or null if value is null/undefined
  */
 function encryptField(value) {
   // null and undefined map to null (field intentionally cleared)
@@ -182,12 +183,23 @@ function encryptField(value) {
     return value;
   }
 
-  // Encrypt value (including empty strings)
+  // In development without encryption key, return plaintext as-is (no-op)
+  if (!KEY && process.env.NODE_ENV !== 'production') {
+    console.warn('⚠️  ENCRYPTION DISABLED: Storing plaintext in development (ENCRYPTION_KEY not set)');
+    return String(value);  // Return plaintext
+  }
+
+  // In production or with key set, encrypt value (including empty strings)
+  if (!KEY) {
+    throw new Error('Encryption key not configured. Set ENCRYPTION_KEY in environment variables.');
+  }
+  
   return encrypt(String(value));
 }
 
 /**
  * Decrypt a field value if encrypted
+ * In development without ENCRYPTION_KEY, returns value as-is (no-op)
  * @param {any} value - Value to decrypt
  * @returns {string|any} Decrypted string or original value if not encrypted
  */
@@ -198,10 +210,14 @@ function decryptField(value) {
 
   // If encrypted, decrypt it
   if (isEncrypted(value)) {
+    if (!KEY) {
+      throw new Error('Encryption key not configured. Cannot decrypt encrypted data without ENCRYPTION_KEY.');
+    }
     return decrypt(value);
   }
 
-  // Return as-is if not encrypted (backward compatibility)
+  // In development without encryption key, return plaintext as-is (no-op for backward compatibility)
+  // This handles both unencrypted legacy data and data stored in plaintext (dev mode)
   return value;
 }
 

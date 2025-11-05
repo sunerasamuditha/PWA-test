@@ -210,9 +210,17 @@ const getMe = asyncHandler(async (req, res) => {
  */
 const updateProfile = asyncHandler(async (req, res) => {
   const userId = req.user.id;
+  
+  // Capture before state
+  const beforeUser = await AuthService.getUserById(userId);
+  res.locals.beforeData = beforeUser;
+  
   const updateData = req.body;
 
   const updatedUser = await AuthService.updateUserProfile(userId, updateData);
+
+  // Capture after state
+  res.locals.afterData = updatedUser;
 
   res.status(200).json({
     success: true,

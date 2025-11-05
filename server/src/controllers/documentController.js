@@ -281,13 +281,18 @@ const viewDocument = asyncHandler(async (req, res) => {
 const deleteDocument = asyncHandler(async (req, res) => {
   const documentId = parseInt(req.params.id);
 
+  // Capture before state (what's being deleted)
+  const documentToDelete = await DocumentService.getDocumentById(documentId, req.user.id, req.user.role);
+  res.locals.beforeData = documentToDelete;
+
   const deletedDocument = await DocumentService.deleteDocument(
     documentId,
     req.user.id,
     req.user.role
   );
 
-  // Store in res.locals for audit logging
+  // Mark as deleted in after state and store in res.locals for audit logging
+  res.locals.afterData = { deleted: true, deletedAt: new Date().toISOString() };
   res.locals.deletedDocument = deletedDocument;
 
   res.json({

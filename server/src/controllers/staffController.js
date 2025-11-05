@@ -155,7 +155,14 @@ class StaffController {
         throw new AppError('Update data is required', 400);
       }
 
+      // Capture before state
+      const beforeStaff = await StaffService.getStaffByUserId(userId);
+      res.locals.beforeData = beforeStaff;
+
       const updatedStaff = await StaffService.updateStaff(userId, updateData);
+
+      // Capture after state
+      res.locals.afterData = updatedStaff;
 
       res.status(200).json({
         success: true,
@@ -195,7 +202,14 @@ class StaffController {
         throw new AppError('Permissions array is required', 400);
       }
 
+      // Capture before state
+      const beforeStaff = await StaffService.getStaffByUserId(userId);
+      res.locals.beforeData = beforeStaff;
+
       const result = await StaffService.updateStaffPermissions(userId, permissions);
+
+      // Capture after state
+      res.locals.afterData = result;
 
       res.status(200).json({
         success: true,

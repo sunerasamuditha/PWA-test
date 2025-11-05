@@ -24,15 +24,20 @@ export async function initDB() {
 
 /**
  * Sanitize request headers by removing sensitive information
+ * Note: Preserves CSRF tokens as they may be required by the server
  */
 function sanitizeHeaders(headers) {
   if (!headers) return {};
   
   const sanitized = { ...headers };
-  // Remove authorization tokens for security
+  // Remove authorization tokens for security (will be re-added on retry)
   delete sanitized.Authorization;
   delete sanitized.authorization;
-  delete sanitized['X-CSRF-Token'];
+  
+  // Preserve CSRF tokens - they may be needed for server-side CSRF protection
+  // If CSRF protection is enabled, the token should be retained or regenerated on retry
+  // NOTE: If your server uses rotating CSRF tokens, you may need to regenerate
+  // the token before retry instead of preserving the old one
   
   return sanitized;
 }

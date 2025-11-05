@@ -220,7 +220,7 @@ const generatePaymentReportPDF = async (req, res, next) => {
         WHERE ii.invoice_id IN (${placeholders})
         ORDER BY ii.invoice_id, ii.id
       `;
-      const [itemRows] = await executeQuery(itemsQuery, uniqueInvoiceIds);
+      const itemRows = await executeQuery(itemsQuery, uniqueInvoiceIds);
       
       // Step 3: Group items by invoice_id in memory
       const itemsByInvoiceId = new Map();

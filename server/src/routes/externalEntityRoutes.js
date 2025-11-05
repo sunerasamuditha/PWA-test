@@ -20,7 +20,7 @@ const {
 router.get(
   '/',
   authenticate,
-  authorizeRoleOrPermission(['admin', 'super_admin'], 'manage_users'),
+  authorizeRoleOrPermission(['admin', 'super_admin'], 'process_payments'),
   getEntitiesValidation,
   handleValidationErrors,
   ExternalEntityController.getAllEntities
@@ -30,7 +30,7 @@ router.get(
 router.get(
   '/stats',
   authenticate,
-  authorizeRoleOrPermission(['admin', 'super_admin'], 'manage_users'),
+  authorizeRoleOrPermission(['admin', 'super_admin'], 'process_payments'),
   ExternalEntityController.getEntityStats
 );
 
@@ -38,7 +38,7 @@ router.get(
 router.get(
   '/search',
   authenticate,
-  authorizeRoleOrPermission(['admin', 'super_admin'], 'manage_users'),
+  authorizeRoleOrPermission(['admin', 'super_admin'], 'process_payments'),
   ExternalEntityController.searchEntities
 );
 
@@ -46,7 +46,7 @@ router.get(
 router.get(
   '/type/:type',
   authenticate,
-  authorizeRoleOrPermission(['admin', 'super_admin'], 'manage_users'),
+  authorizeRoleOrPermission(['admin', 'super_admin'], 'process_payments'),
   entityTypeValidation,
   handleValidationErrors,
   ExternalEntityController.getEntitiesByType
@@ -56,7 +56,7 @@ router.get(
 router.get(
   '/:id',
   authenticate,
-  authorizeRoleOrPermission(['admin', 'super_admin'], 'manage_users'),
+  authorizeRoleOrPermission(['admin', 'super_admin'], 'process_payments'),
   entityIdValidation,
   handleValidationErrors,
   ExternalEntityController.getEntityById

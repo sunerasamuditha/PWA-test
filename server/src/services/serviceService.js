@@ -162,8 +162,8 @@ class ServiceService {
       const categoryCounts = await Service.countByCategory();
       
       // Get total and active counts with explicit count queries
-      const [totalResult] = await executeQuery('SELECT COUNT(*) as total FROM Services');
-      const [activeResult] = await executeQuery('SELECT COUNT(*) as total FROM Services WHERE is_active = 1');
+      const totalResult = await executeQuery('SELECT COUNT(*) as total FROM Services');
+      const activeResult = await executeQuery('SELECT COUNT(*) as total FROM Services WHERE is_active = 1');
 
       // Calculate average price by category in one query
       const avgPriceData = await Service.getAveragePriceByCategory();

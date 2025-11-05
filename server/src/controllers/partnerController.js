@@ -26,11 +26,17 @@ const getPartnerProfile = async (req, res, next) => {
 const updatePartnerProfile = async (req, res, next) => {
   try {
     const userId = req.user.id;
+    
+    // Capture before state
+    const beforePartner = await PartnerService.getPartnerByUserId(userId);
+    res.locals.beforeData = beforePartner;
+    
     const updateData = req.body;
     
     const updatedPartner = await PartnerService.updatePartnerProfile(userId, updateData);
     
-    // Set updated partner in res.locals for audit middleware
+    // Capture after state and set updated partner in res.locals for audit middleware
+    res.locals.afterData = updatedPartner;
     res.locals.updatedPartner = updatedPartner;
     
     res.json({
@@ -214,7 +220,14 @@ const updatePartnerStatus = async (req, res, next) => {
       throw new AppError('Invalid status. Must be active, inactive, or pending.', 400);
     }
     
+    // Capture before state
+    const beforePartner = await PartnerService.getPartnerById(partnerId);
+    res.locals.beforeData = beforePartner;
+    
     const updatedPartner = await PartnerService.updatePartnerStatus(partnerId, status);
+    
+    // Capture after state
+    res.locals.afterData = updatedPartner;
     
     res.json({
       success: true,

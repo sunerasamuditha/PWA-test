@@ -37,7 +37,7 @@ class Document {
       WHERE d.id = ?
     `;
     
-    const [results] = await executeQuery(query, [id], connection);
+    const results = await executeQuery(query, [id], connection);
     return results.length > 0 ? this._transformDocument(results[0]) : null;
   }
 
@@ -102,7 +102,7 @@ class Document {
       ${endDate ? 'AND d.uploaded_at <= ?' : ''}
     `;
     const countParams = [...params];
-    const [countResult] = await executeQuery(countQuery, countParams);
+    const countResult = await executeQuery(countQuery, countParams);
     const total = countResult[0].total;
 
     // Add sorting
@@ -116,7 +116,7 @@ class Document {
     query += ' LIMIT ? OFFSET ?';
     params.push(limit, offset);
 
-    const [results] = await executeQuery(query, params);
+    const results = await executeQuery(query, params);
     
     return {
       documents: results.map(doc => this._transformDocument(doc)),
@@ -180,7 +180,7 @@ class Document {
       uploaded_by_staff_id || null
     ];
 
-    const [result] = await executeQuery(query, params, connection);
+    const result = await executeQuery(query, params, connection);
     
     // Fetch and return the created document
     return await this.findById(result.insertId, connection);
@@ -229,7 +229,7 @@ class Document {
    */
   static async deleteById(id) {
     const query = 'DELETE FROM `documents` WHERE id = ?';
-    const [result] = await executeQuery(query, [id]);
+    const result = await executeQuery(query, [id]);
     return result.affectedRows > 0;
   }
 
@@ -303,7 +303,7 @@ class Document {
       ${endDate ? 'AND d.uploaded_at <= ?' : ''}
     `;
     const countParams = [...params];
-    const [countResult] = await executeQuery(countQuery, countParams);
+    const countResult = await executeQuery(countQuery, countParams);
     const total = countResult[0].total;
 
     // Add sorting
@@ -322,7 +322,7 @@ class Document {
     query += ' LIMIT ? OFFSET ?';
     params.push(limit, offset);
 
-    const [results] = await executeQuery(query, params);
+    const results = await executeQuery(query, params);
     
     return {
       documents: results.map(doc => this._transformDocument(doc)),
@@ -350,7 +350,7 @@ class Document {
       params.push(type);
     }
 
-    const [results] = await executeQuery(query, params);
+    const results = await executeQuery(query, params);
     return results[0].count;
   }
 
@@ -366,7 +366,7 @@ class Document {
       WHERE patient_user_id = ? 
       GROUP BY type
     `;
-    const [results] = await executeQuery(query, [patientUserId]);
+    const results = await executeQuery(query, [patientUserId]);
     return results;
   }
 

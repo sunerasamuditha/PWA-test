@@ -119,7 +119,7 @@ const updateUser = asyncHandler(async (req, res) => {
 
   // Secondary guard: Prevent demoting admin/super_admin roles unless requester is super_admin
   const userBefore = await UserService.getUserById(parseInt(userId));
-  res.locals.userBefore = userBefore;
+  res.locals.beforeData = userBefore;
 
   if (updateData.role && updateData.role !== userBefore.role) {
     // Check if target user is admin or super_admin
@@ -143,7 +143,8 @@ const updateUser = asyncHandler(async (req, res) => {
 
   const updatedUser = await UserService.updateUser(parseInt(userId), updateData);
 
-  // Set user in res.locals for audit middleware
+  // Capture after state and set user in res.locals for audit middleware
+  res.locals.afterData = updatedUser;
   res.locals.user = updatedUser;
 
   res.status(200).json({

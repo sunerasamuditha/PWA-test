@@ -21,7 +21,7 @@ class Payment {
       WHERE p.id = ?
     `;
     
-    const [rows] = await executeQuery(query, [id], connection);
+    const rows = await executeQuery(query, [id], connection);
     return rows.length > 0 ? this._transformPayment(rows[0]) : null;
   }
 
@@ -40,7 +40,7 @@ class Payment {
       ORDER BY p.paid_at DESC
     `;
     
-    const [rows] = await executeQuery(query, [invoiceId], connection);
+    const rows = await executeQuery(query, [invoiceId], connection);
     return rows.map(row => this._transformPayment(row));
   }
 
@@ -77,7 +77,7 @@ class Payment {
       recorded_by_staff_id
     ];
 
-    const [result] = await executeQuery(query, params, connection);
+    const result = await executeQuery(query, params, connection);
     return this.findById(result.insertId, connection);
   }
 
@@ -148,8 +148,8 @@ class Payment {
 
     // Get total count
     const countQuery = query.replace(/SELECT.*FROM/, 'SELECT COUNT(*) as total FROM');
-    const [countResult] = await executeQuery(countQuery, params);
-    const total = countResult[0].total;
+    const countRows = await executeQuery(countQuery, params);
+    const total = countRows[0].total;
 
     // Add sorting
     const allowedSortFields = ['paid_at', 'amount', 'payment_method'];
@@ -162,7 +162,7 @@ class Payment {
     query += ' LIMIT ? OFFSET ?';
     params.push(parseInt(limit), parseInt(offset));
 
-    const [rows] = await executeQuery(query, params);
+    const rows = await executeQuery(query, params);
     const payments = rows.map(row => this._transformPayment(row));
 
     return {
@@ -186,7 +186,7 @@ class Payment {
       WHERE invoice_id = ? AND payment_status = 'completed'
     `;
     
-    const [rows] = await executeQuery(query, [invoiceId], connection);
+    const rows = await executeQuery(query, [invoiceId], connection);
     return parseFloat(rows[0].total);
   }
 
@@ -210,7 +210,7 @@ class Payment {
       FROM Payments
     `;
     
-    const [rows] = await executeQuery(query);
+    const rows = await executeQuery(query);
     const stats = rows[0];
 
     return {

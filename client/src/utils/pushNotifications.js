@@ -21,6 +21,44 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 /**
+ * Convert ArrayBuffer to base64 string
+ * @param {ArrayBuffer} buffer - Buffer to convert
+ * @returns {string} Base64 encoded string
+ */
+function arrayBufferToBase64(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return window.btoa(binary);
+}
+
+/**
+ * Serialize PushSubscription safely for cross-browser compatibility
+ * @param {PushSubscription} subscription - The push subscription to serialize
+ * @returns {Object} Serialized subscription object
+ */
+function serializeSubscription(subscription) {
+  // Try to use toJSON if available (modern browsers)
+  if (subscription.toJSON) {
+    return subscription.toJSON();
+  }
+
+  // Fallback for older browsers: manually serialize
+  const p256dh = subscription.getKey('p256dh');
+  const auth = subscription.getKey('auth');
+
+  return {
+    endpoint: subscription.endpoint,
+    keys: {
+      p256dh: p256dh ? arrayBufferToBase64(p256dh) : null,
+      auth: auth ? arrayBufferToBase64(auth) : null
+    }
+  };
+}
+
+/**
  * Request notification permission from user
  * @returns {Promise<string>} Permission state: 'granted', 'denied', or 'default'
  */
@@ -80,7 +118,7 @@ export async function subscribeToPushNotifications(vapidPublicKey) {
     // Check if already subscribed
     const existingSubscription = await registration.pushManager.getSubscription();
     if (existingSubscription) {
-      return existingSubscription;
+      return serializeSubscription(existingSubscription);
     }
 
     // Subscribe to push notifications
@@ -89,7 +127,7 @@ export async function subscribeToPushNotifications(vapidPublicKey) {
       applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
     });
 
-    return subscription;
+    return serializeSubscription(subscription);
   } catch (error) {
     console.error('Error subscribing to push notifications:', error);
     throw error;
@@ -123,7 +161,7 @@ export async function unsubscribeFromPushNotifications() {
 
 /**
  * Get current push subscription
- * @returns {Promise<PushSubscription|null>} Current subscription or null
+ * @returns {Promise<Object|null>} Serialized subscription or null
  */
 export async function getCurrentSubscription() {
   try {
@@ -133,7 +171,7 @@ export async function getCurrentSubscription() {
 
     const registration = await navigator.serviceWorker.ready;
     const subscription = await registration.pushManager.getSubscription();
-    return subscription;
+    return subscription ? serializeSubscription(subscription) : null;
   } catch (error) {
     console.error('Error getting current subscription:', error);
     return null;

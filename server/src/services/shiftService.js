@@ -173,7 +173,7 @@ class ShiftService {
     const { executeQuery } = require('../config/database');
     
     // Get all staff members
-    const [staffMembers] = await executeQuery(
+    const staffMembers = await executeQuery(
       "SELECT id, full_name, email, role FROM Users WHERE role = 'staff'"
     );
 

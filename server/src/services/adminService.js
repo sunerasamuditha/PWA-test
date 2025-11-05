@@ -26,7 +26,7 @@ class AdminService {
         WHERE deleted_at IS NULL
       `;
       
-      const [userStats] = await executeQuery(userStatsQuery);
+      const userStats = await executeQuery(userStatsQuery);
       stats.users = userStats;
 
       // Get patient statistics (with error handling for missing table)
@@ -44,7 +44,7 @@ class AdminService {
           WHERE deleted_at IS NULL
         `;
         
-        const [patientStats] = await executeQuery(patientStatsQuery);
+        const patientStats = await executeQuery(patientStatsQuery);
         stats.patients = patientStats;
       } catch (error) {
         console.warn('Patients table not found, skipping patient statistics');
@@ -69,7 +69,7 @@ class AdminService {
           WHERE deleted_at IS NULL
         `;
         
-        const [staffStats] = await executeQuery(staffStatsQuery);
+        const staffStats = await executeQuery(staffStatsQuery);
         stats.staffMembers = staffStats;
       } catch (error) {
         console.warn('Staff_Members table not found, skipping staff statistics');
@@ -234,7 +234,7 @@ class AdminService {
           WHERE deleted_at IS NULL
         `;
         
-        const [partnerStats] = await executeQuery(partnerStatsQuery);
+        const partnerStats = await executeQuery(partnerStatsQuery);
         stats.partners = {
           ...partnerStats,
           total_commission_earned: parseFloat(partnerStats.total_commission_earned || 0)
@@ -256,14 +256,14 @@ class AdminService {
       // Get shift statistics (with error handling for missing table)
       try {
         // Staff currently on shift
-        const [currentlyOnShiftRow] = await executeQuery(`
+        const currentlyOnShiftRow = await executeQuery(`
           SELECT COUNT(*) as count
           FROM Staff_Shifts
           WHERE logout_at IS NULL
         `);
         
         // Total shifts and hours today
-        const [todayStatsRow] = await executeQuery(`
+        const todayStatsRow = await executeQuery(`
           SELECT 
             COUNT(*) as total_shifts,
             COALESCE(SUM(total_hours), 0) as total_hours
@@ -272,7 +272,7 @@ class AdminService {
         `);
         
         // Total shifts and hours this week
-        const [weekStatsRow] = await executeQuery(`
+        const weekStatsRow = await executeQuery(`
           SELECT 
             COUNT(*) as total_shifts,
             COALESCE(SUM(total_hours), 0) as total_hours
@@ -281,7 +281,7 @@ class AdminService {
         `);
         
         // Total shifts and hours this month
-        const [monthStatsRow] = await executeQuery(`
+        const monthStatsRow = await executeQuery(`
           SELECT 
             COUNT(*) as total_shifts,
             COALESCE(SUM(total_hours), 0) as total_hours
@@ -309,13 +309,13 @@ class AdminService {
         });
         
         stats.shifts = {
-          staff_currently_on_shift: currentlyOnShiftRow.count,
-          total_shifts_today: todayStatsRow.total_shifts,
-          total_hours_today: parseFloat(todayStatsRow.total_hours),
-          total_shifts_week: weekStatsRow.total_shifts,
-          total_hours_week: parseFloat(weekStatsRow.total_hours),
-          total_shifts_month: monthStatsRow.total_shifts,
-          total_hours_month: parseFloat(monthStatsRow.total_hours),
+          staff_currently_on_shift: currentlyOnShiftRow[0].count,
+          total_shifts_today: todayStatsRow[0].total_shifts,
+          total_hours_today: parseFloat(todayStatsRow[0].total_hours),
+          total_shifts_week: weekStatsRow[0].total_shifts,
+          total_hours_week: parseFloat(weekStatsRow[0].total_hours),
+          total_shifts_month: monthStatsRow[0].total_shifts,
+          total_hours_month: parseFloat(monthStatsRow[0].total_hours),
           shifts_by_type: hoursByShiftType
         };
       } catch (error) {
@@ -346,17 +346,17 @@ class AdminService {
           FROM External_Entities
         `;
         
-        const [entitiesStats] = await executeQuery(entitiesStatsQuery);
+        const entitiesStats = await executeQuery(entitiesStatsQuery);
         stats.externalEntities = {
-          totalEntities: entitiesStats.total_entities || 0,
+          totalEntities: entitiesStats[0].total_entities || 0,
           byType: {
-            hospital: entitiesStats.hospitals || 0,
-            lab: entitiesStats.labs || 0,
-            supplier: entitiesStats.suppliers || 0,
-            insurance_company: entitiesStats.insurance_companies || 0,
-            other: entitiesStats.other_entities || 0
+            hospital: entitiesStats[0].hospitals || 0,
+            lab: entitiesStats[0].labs || 0,
+            supplier: entitiesStats[0].suppliers || 0,
+            insurance_company: entitiesStats[0].insurance_companies || 0,
+            other: entitiesStats[0].other_entities || 0
           },
-          newEntitiesMonth: entitiesStats.new_entities_month || 0
+          newEntitiesMonth: entitiesStats[0].new_entities_month || 0
         };
       } catch (error) {
         console.warn('External_Entities table not found, skipping external entities statistics');
@@ -390,7 +390,7 @@ class AdminService {
           FROM Accounts_Payable
         `;
         
-        const [payablesStats] = await executeQuery(payablesStatsQuery);
+        const payablesStats = await executeQuery(payablesStatsQuery);
         
         // Get payables by entity type
         const payablesByTypeQuery = `
@@ -417,16 +417,16 @@ class AdminService {
         });
         
         stats.accountsPayable = {
-          totalPayables: payablesStats.total_payables || 0,
-          dueCount: payablesStats.due_count || 0,
-          paidCount: payablesStats.paid_count || 0,
-          overdueCount: payablesStats.overdue_count || 0,
-          totalAmount: parseFloat(payablesStats.total_amount || 0),
-          dueAmount: parseFloat(payablesStats.due_amount || 0),
-          paidAmount: parseFloat(payablesStats.paid_amount || 0),
-          overdueAmount: parseFloat(payablesStats.overdue_amount || 0),
-          dueSoonCount: payablesStats.due_soon_count || 0,
-          dueSoonAmount: parseFloat(payablesStats.due_soon_amount || 0),
+          totalPayables: payablesStats[0].total_payables || 0,
+          dueCount: payablesStats[0].due_count || 0,
+          paidCount: payablesStats[0].paid_count || 0,
+          overdueCount: payablesStats[0].overdue_count || 0,
+          totalAmount: parseFloat(payablesStats[0].total_amount || 0),
+          dueAmount: parseFloat(payablesStats[0].due_amount || 0),
+          paidAmount: parseFloat(payablesStats[0].paid_amount || 0),
+          overdueAmount: parseFloat(payablesStats[0].overdue_amount || 0),
+          dueSoonCount: payablesStats[0].due_soon_count || 0,
+          dueSoonAmount: parseFloat(payablesStats[0].due_soon_amount || 0),
           byEntityType: byEntityType
         };
       } catch (error) {
@@ -486,7 +486,7 @@ class AdminService {
           FROM Audit_Logs
         `;
         
-        const [auditStatsRow] = await executeQuery(auditStatsQuery);
+        const auditStatsRow = await executeQuery(auditStatsQuery);
         
         const topEntitiesQuery = `
           SELECT 
@@ -551,16 +551,16 @@ class AdminService {
         const failedLogins = await executeQuery(failedLoginsQuery);
         
         stats.auditLogs = {
-          totalLogs: auditStatsRow.total_logs || 0,
-          createActions: auditStatsRow.create_actions || 0,
-          updateActions: auditStatsRow.update_actions || 0,
-          deleteActions: auditStatsRow.delete_actions || 0,
-          loginActions: auditStatsRow.login_actions || 0,
-          logoutActions: auditStatsRow.logout_actions || 0,
-          accessActions: auditStatsRow.access_actions || 0,
-          logsToday: auditStatsRow.logs_today || 0,
-          logsWeek: auditStatsRow.logs_week || 0,
-          logsMonth: auditStatsRow.logs_month || 0,
+          totalLogs: auditStatsRow[0].total_logs || 0,
+          createActions: auditStatsRow[0].create_actions || 0,
+          updateActions: auditStatsRow[0].update_actions || 0,
+          deleteActions: auditStatsRow[0].delete_actions || 0,
+          loginActions: auditStatsRow[0].login_actions || 0,
+          logoutActions: auditStatsRow[0].logout_actions || 0,
+          accessActions: auditStatsRow[0].access_actions || 0,
+          logsToday: auditStatsRow[0].logs_today || 0,
+          logsWeek: auditStatsRow[0].logs_week || 0,
+          logsMonth: auditStatsRow[0].logs_month || 0,
           topEntities: topEntities,
           criticalActions: criticalActions,
           failedLogins: failedLogins

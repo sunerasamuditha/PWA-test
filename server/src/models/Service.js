@@ -15,7 +15,7 @@ class Service {
    */
   static async findById(id, connection = null) {
     const query = 'SELECT * FROM Services WHERE id = ?';
-    const [rows] = await executeQuery(query, [id], connection);
+    const rows = await executeQuery(query, [id], connection);
     return rows.length > 0 ? this._transformService(rows[0]) : null;
   }
 
@@ -68,7 +68,7 @@ class Service {
 
     // Get total count
     const countQuery = query.replace('SELECT *', 'SELECT COUNT(*) as total');
-    const [countResult] = await executeQuery(countQuery, params);
+    const countResult = await executeQuery(countQuery, params);
     const total = countResult[0].total;
 
     // Add sorting
@@ -82,7 +82,7 @@ class Service {
     query += ' LIMIT ? OFFSET ?';
     params.push(parseInt(limit), parseInt(offset));
 
-    const [rows] = await executeQuery(query, params);
+    const rows = await executeQuery(query, params);
     const services = rows.map(row => this._transformService(row));
 
     return {
@@ -114,7 +114,7 @@ class Service {
     `;
     const params = [name, description, price, service_category, is_active ? 1 : 0];
 
-    const [result] = await executeQuery(query, params, connection);
+    const result = await executeQuery(query, params, connection);
     return this.findById(result.insertId, connection);
   }
 
@@ -175,7 +175,7 @@ class Service {
     }
 
     query += ' GROUP BY service_category';
-    const [rows] = await executeQuery(query, params);
+    const rows = await executeQuery(query, params);
     return rows;
   }
 
@@ -192,7 +192,7 @@ class Service {
     }
 
     query += ' ORDER BY name ASC';
-    const [rows] = await executeQuery(query, params);
+    const rows = await executeQuery(query, params);
     return rows.map(row => this._transformService(row));
   }
 
@@ -210,7 +210,7 @@ class Service {
       GROUP BY service_category
     `;
     
-    const [rows] = await executeQuery(query);
+    const rows = await executeQuery(query);
     return rows.map(row => ({
       category: row.service_category,
       averagePrice: parseFloat(row.average_price),

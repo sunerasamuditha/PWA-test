@@ -3,6 +3,7 @@ const { sanitizeForLog } = require('../utils/securityUtils');
 
 /**
  * Sanitize data specifically for audit logging
+ * Redacts sensitive PII fields recursively
  * @param {any} data - Data to sanitize
  * @returns {any} Sanitized data
  */
@@ -14,13 +15,39 @@ const sanitizeForAudit = (data) => {
   
   // Additional audit-specific sanitization
   if (typeof sanitized === 'object' && sanitized !== null) {
+    // Sensitive authentication/security fields
     const sensitive = ['password', 'token', 'secret', 'authorization', 'apiKey', 'privateKey'];
+    
+    // PII fields that should be redacted (passport, policy numbers, etc.)
+    const piiFields = ['passport', 'passportInfo', 'passport_info', 'policyNumber', 'policy_number'];
+    
+    // Insurance info fields
+    const insuranceFields = ['insuranceInfo', 'insurance_info'];
+    
     const result = { ...sanitized };
     
     for (const key of Object.keys(result)) {
-      if (sensitive.some(s => key.toLowerCase().includes(s))) {
+      const lowerKey = key.toLowerCase();
+      
+      // Redact security sensitive fields
+      if (sensitive.some(s => lowerKey.includes(s.toLowerCase()))) {
         result[key] = '[REDACTED]';
-      } else if (typeof result[key] === 'object' && result[key] !== null) {
+      }
+      // Redact passport information
+      else if (piiFields.some(pii => lowerKey.includes(pii.toLowerCase()))) {
+        result[key] = '[REDACTED]';
+      }
+      // Redact insurance information (including nested policyNumber)
+      else if (insuranceFields.some(ins => lowerKey === ins.toLowerCase())) {
+        // If it's an object with nested fields, redact the whole object
+        if (typeof result[key] === 'object' && result[key] !== null) {
+          result[key] = '[REDACTED]';
+        } else {
+          result[key] = '[REDACTED]';
+        }
+      }
+      // Recursively sanitize nested objects
+      else if (typeof result[key] === 'object' && result[key] !== null) {
         result[key] = sanitizeForAudit(result[key]);
       }
     }

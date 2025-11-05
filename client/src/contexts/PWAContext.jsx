@@ -19,7 +19,7 @@ export const PWAProvider = ({ children }) => {
   const [isInstalled, setIsInstalled] = useState(false);
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [queuedRequestsCount, setQueuedRequestsCount] = useState(0);
-  const [workboxInstance, setWorkboxInstance] = useState(null);
+  const [updateSWFn, setUpdateSWFn] = useState(null);
 
   // Listen to online/offline events
   useEffect(() => {
@@ -92,7 +92,10 @@ export const PWAProvider = ({ children }) => {
   useEffect(() => {
     const handleSWUpdate = (event) => {
       setUpdateAvailable(true);
-      setWorkboxInstance(event.detail.wb);
+      // Store the updateSW function from event detail
+      if (event.detail && event.detail.updateSW) {
+        setUpdateSWFn(() => event.detail.updateSW);
+      }
     };
 
     window.addEventListener('sw-update-available', handleSWUpdate);
@@ -175,21 +178,23 @@ export const PWAProvider = ({ children }) => {
   /**
    * Activate waiting service worker update
    */
-  const activateUpdate = () => {
-    if (!workboxInstance) {
-      console.warn('Workbox instance not available');
+  const activateUpdate = async () => {
+    if (!updateSWFn) {
+      console.warn('Update function not available');
       return;
     }
 
-    // Send skip waiting message to service worker
-    workboxInstance.messageSkipWaiting();
-
-    // Listen for controlling event, then reload
-    const handleControlling = () => {
+    try {
+      // Call the updateSW function to activate the new service worker
+      await updateSWFn(true);
+      
+      // Reload the page to load the new version
       window.location.reload();
-    };
-    
-    workboxInstance.addEventListener('controlling', handleControlling, { once: true });
+    } catch (error) {
+      console.error('Error activating update:', error);
+      // Fallback: reload anyway
+      window.location.reload();
+    }
   };
 
   /**

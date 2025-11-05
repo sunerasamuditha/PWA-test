@@ -22,7 +22,7 @@ class Patient {
         WHERE user_id = ?
       `;
       
-      const [rows] = await executeQuery(query, [userId]);
+      const rows = await executeQuery(query, [userId]);
       
       if (rows.length === 0) {
         return null;
@@ -255,8 +255,8 @@ class Patient {
         ${whereClause}
       `;
       
-      const [countResult] = await executeQuery(countQuery, queryParams);
-      const total = countResult[0].total;
+      const countRows = await executeQuery(countQuery, queryParams);
+      const total = countRows[0].total;
 
       // Get paginated results
       const query = `
@@ -280,7 +280,7 @@ class Patient {
       `;
       
       queryParams.push(parseInt(limit), parseInt(offset));
-      const [rows] = await executeQuery(query, queryParams);
+      const rows = await executeQuery(query, queryParams);
       
       const patients = rows.map(row => this._transformPatient(row));
       

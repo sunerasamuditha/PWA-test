@@ -37,8 +37,8 @@ const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // 5 requests per window
   message: 'Too many authentication attempts. Please try again in 15 minutes.',
-  standardHeaders: false, // Disable draft-6 RateLimit-* headers
-  legacyHeaders: true, // Enable X-RateLimit-* headers (X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset)
+  standardHeaders: true, // Use standard draft-6 RateLimit-* headers
+  legacyHeaders: false, // Disable X-RateLimit-* headers
   skipSuccessfulRequests: false, // Count all requests
   keyGenerator,
   skip,
@@ -53,8 +53,8 @@ const passwordChangeLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 3, // 3 requests per window
   message: 'Too many password change attempts. Please try again later.',
-  standardHeaders: false,
-  legacyHeaders: true, // Use X-RateLimit-* headers
+  standardHeaders: true,
+  legacyHeaders: false,
   skipSuccessfulRequests: false,
   keyGenerator,
   skip,
@@ -69,8 +69,8 @@ const writeOperationsLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // 100 requests per window
   message: 'Too many requests. Please slow down.',
-  standardHeaders: false,
-  legacyHeaders: true, // Use X-RateLimit-* headers
+  standardHeaders: true,
+  legacyHeaders: false,
   skipSuccessfulRequests: false,
   keyGenerator,
   skip,
@@ -85,8 +85,8 @@ const readOperationsLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 1000, // 1000 requests per window
   message: 'Too many requests. Please slow down.',
-  standardHeaders: false,
-  legacyHeaders: true, // Use X-RateLimit-* headers
+  standardHeaders: true,
+  legacyHeaders: false,
   skipSuccessfulRequests: false,
   keyGenerator,
   skip,
@@ -101,8 +101,8 @@ const publicApiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 500, // 500 requests per window
   message: 'Too many requests. Please slow down.',
-  standardHeaders: false,
-  legacyHeaders: true, // Use X-RateLimit-* headers
+  standardHeaders: true,
+  legacyHeaders: false,
   skipSuccessfulRequests: false,
   keyGenerator,
   skip,
@@ -117,8 +117,8 @@ const strictLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 10, // 10 requests per hour
   message: 'Too many sensitive operations. Please try again later.',
-  standardHeaders: false,
-  legacyHeaders: true, // Use X-RateLimit-* headers
+  standardHeaders: true,
+  legacyHeaders: false,
   skipSuccessfulRequests: false,
   keyGenerator,
   skip,

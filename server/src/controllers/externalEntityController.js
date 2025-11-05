@@ -69,6 +69,11 @@ class ExternalEntityController {
    */
   static updateEntity = asyncHandler(async (req, res) => {
     const entityId = parseInt(req.params.id);
+    
+    // Capture before state
+    const beforeEntity = await ExternalEntityService.getEntityById(entityId);
+    res.locals.beforeData = beforeEntity;
+    
     const { name, type, contact_info } = req.body;
 
     const entity = await ExternalEntityService.updateEntity(
@@ -77,7 +82,8 @@ class ExternalEntityController {
       req.user.id
     );
 
-    // Store for audit logging
+    // Capture after state and store for audit logging
+    res.locals.afterData = entity;
     res.locals.entity = entity;
 
     res.status(200).json({
@@ -94,11 +100,15 @@ class ExternalEntityController {
   static deleteEntity = asyncHandler(async (req, res) => {
     const entityId = parseInt(req.params.id);
 
-    // Get entity before deletion for audit log
+    // Capture before state (what's being deleted)
     const entity = await ExternalEntityService.getEntityById(entityId);
+    res.locals.beforeData = entity;
     res.locals.entity = entity;
 
     await ExternalEntityService.deleteEntity(entityId, req.user.id);
+
+    // Mark as deleted in after state
+    res.locals.afterData = { deleted: true, deletedAt: new Date().toISOString() };
 
     res.status(200).json({
       success: true,

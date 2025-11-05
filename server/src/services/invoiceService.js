@@ -140,7 +140,7 @@ class InvoiceService {
           GROUP BY i.id, i.status, i.total_amount, i.due_date
         `;
         
-        const [balanceRows] = await executeQuery(aggregateQuery, invoiceIds);
+        const balanceRows = await executeQuery(aggregateQuery, invoiceIds);
         const balanceMap = new Map(balanceRows.map(row => [row.id, row]));
         
         // Update invoices with balances and optionally update status
@@ -250,7 +250,7 @@ class InvoiceService {
           GROUP BY i.id, i.status, i.total_amount, i.due_date
         `;
         
-        const [balanceRows] = await executeQuery(aggregateQuery, invoiceIds);
+        const balanceRows = await executeQuery(aggregateQuery, invoiceIds);
         const balanceMap = new Map(balanceRows.map(row => [row.id, row]));
         
         // Update invoices with balances and optionally update status
@@ -425,7 +425,7 @@ class InvoiceService {
       let newStatus = invoice.status;
 
       // Check if past due using database current date to avoid timezone drift
-      const [dateCheck] = await executeQuery(
+      const dateCheck = await executeQuery(
         'SELECT ? < CURDATE() as is_past_due',
         [invoice.dueDate],
         connection
@@ -483,7 +483,7 @@ class InvoiceService {
         ) p ON i.id = p.invoice_id
       `;
       
-      const [rows] = await executeQuery(statsQuery);
+      const rows = await executeQuery(statsQuery);
       const result = rows[0];
       
       const stats = {
@@ -539,7 +539,7 @@ class InvoiceService {
         WHERE i.patient_user_id = ?
       `;
       
-      const [rows] = await executeQuery(statsQuery, [patientUserId]);
+      const rows = await executeQuery(statsQuery, [patientUserId]);
       const result = rows[0];
       
       const stats = {

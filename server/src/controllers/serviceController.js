@@ -102,6 +102,11 @@ const createService = async (req, res, next) => {
 const updateService = async (req, res, next) => {
   try {
     const serviceId = parseInt(req.params.id);
+    
+    // Capture before state
+    const beforeService = await serviceService.getServiceById(serviceId);
+    res.locals.beforeData = beforeService;
+    
     const updateData = {
       name: req.body.name,
       description: req.body.description,
@@ -119,7 +124,8 @@ const updateService = async (req, res, next) => {
 
     const service = await serviceService.updateService(serviceId, updateData, req.user.id);
 
-    // Store for audit logging
+    // Capture after state and store for audit logging
+    res.locals.afterData = service;
     res.locals.auditData = {
       service,
       action: 'update'

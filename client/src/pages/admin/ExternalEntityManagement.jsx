@@ -120,9 +120,9 @@ const ExternalEntityManagement = () => {
     }
   };
 
-  const handleEditSubmit = async (formData) => {
+  const handleEditSubmit = async (id, formData) => {
     try {
-      await apiService.externalEntities.update(selectedEntity.id, formData);
+      await apiService.externalEntities.update(id, formData);
       handleEditSuccess();
     } catch (err) {
       throw err; // Let modal handle the error

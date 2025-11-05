@@ -1,6 +1,67 @@
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { apiService } from '../../services/api';
 import { getEntityTypeDisplayName, formatAddress } from '../../utils/validation';
+import LoadingSpinner from '../LoadingSpinner';
 
 function EntityDetailsModal({ isOpen, onClose, entity, onEdit }) {
+  const navigate = useNavigate();
+  const [payablesSummary, setPayablesSummary] = useState(null);
+  const [loadingPayables, setLoadingPayables] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && entity) {
+      fetchPayablesSummary();
+    }
+  }, [isOpen, entity]);
+
+  const fetchPayablesSummary = async () => {
+    if (!entity?.id) return;
+    
+    try {
+      setLoadingPayables(true);
+      
+      // Fetch payables for this entity
+      const response = await apiService.accountsPayable.getByEntity(entity.id, { limit: 1000 });
+      const payables = response.data?.payables || [];
+      
+      // Calculate summary
+      const totalCount = payables.length;
+      const totalDue = payables
+        .filter(p => p.status === 'due' || p.status === 'overdue')
+        .reduce((sum, p) => sum + parseFloat(p.totalAmount || 0), 0);
+      const totalOverdue = payables
+        .filter(p => p.status === 'overdue')
+        .reduce((sum, p) => sum + parseFloat(p.totalAmount || 0), 0);
+      const overdueCount = payables.filter(p => p.status === 'overdue').length;
+      
+      setPayablesSummary({
+        totalCount,
+        totalDue,
+        totalOverdue,
+        overdueCount
+      });
+    } catch (err) {
+      console.error('Error fetching payables summary:', err);
+      setPayablesSummary(null);
+    } finally {
+      setLoadingPayables(false);
+    }
+  };
+
+  const handleViewPayables = () => {
+    onClose();
+    navigate(`/admin/accounts-payable?entity_id=${entity.id}`);
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 2
+    }).format(amount);
+  };
+
   if (!isOpen || !entity) return null;
 
   return (
@@ -122,6 +183,55 @@ function EntityDetailsModal({ isOpen, onClose, entity, onEdit }) {
                 </div>
               )}
             </div>
+          </div>
+
+          <div className="form-section">
+            <h4 className="section-title">Related Accounts Payable</h4>
+            {loadingPayables ? (
+              <LoadingSpinner size="small" />
+            ) : payablesSummary ? (
+              <>
+                <div className="details-grid">
+                  <div className="detail-item">
+                    <label>Total Payables:</label>
+                    <span>{payablesSummary.totalCount}</span>
+                  </div>
+                  <div className="detail-item">
+                    <label>Amount Due:</label>
+                    <span style={{ fontWeight: 'bold', color: '#0066cc' }}>
+                      {formatCurrency(payablesSummary.totalDue)}
+                    </span>
+                  </div>
+                  {payablesSummary.overdueCount > 0 && (
+                    <>
+                      <div className="detail-item">
+                        <label>Overdue Count:</label>
+                        <span style={{ fontWeight: 'bold', color: '#dc2626' }}>
+                          {payablesSummary.overdueCount}
+                        </span>
+                      </div>
+                      <div className="detail-item">
+                        <label>Amount Overdue:</label>
+                        <span style={{ fontWeight: 'bold', color: '#dc2626' }}>
+                          {formatCurrency(payablesSummary.totalOverdue)}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                </div>
+                {payablesSummary.totalCount > 0 && (
+                  <button 
+                    onClick={handleViewPayables}
+                    className="btn btn-secondary"
+                    style={{ marginTop: '12px' }}
+                  >
+                    View All Payables for This Entity
+                  </button>
+                )}
+              </>
+            ) : (
+              <p>No payables found for this entity.</p>
+            )}
           </div>
         </div>
 

@@ -124,6 +124,11 @@ exports.getAppointmentById = asyncHandler(async (req, res) => {
  */
 exports.updateAppointment = asyncHandler(async (req, res) => {
   const appointmentId = parseInt(req.params.id);
+  
+  // Capture before state
+  const beforeAppointment = await AppointmentService.getAppointmentById(appointmentId, req.user.id, req.user.role);
+  res.locals.beforeData = beforeAppointment;
+  
   const updateData = req.body;
 
   const updatedAppointment = await AppointmentService.updateAppointment(
@@ -134,7 +139,8 @@ exports.updateAppointment = asyncHandler(async (req, res) => {
     req.user.permissions || []
   );
 
-  // Store in res.locals for audit logging
+  // Capture after state and store in res.locals for audit logging
+  res.locals.afterData = updatedAppointment;
   res.locals.appointment = updatedAppointment;
 
   res.json({

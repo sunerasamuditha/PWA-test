@@ -22,7 +22,7 @@ const {
 router.post(
   '/',
   authenticate,
-  authorizeRoleOrPermission(['admin', 'super_admin'], 'manage_users'),
+  authorizeRoleOrPermission(['admin', 'super_admin'], 'process_payments'),
   createPayableValidation,
   handleValidationErrors,
   AccountsPayableController.createPayable,
@@ -33,7 +33,7 @@ router.post(
 router.get(
   '/',
   authenticate,
-  authorizeRoleOrPermission(['admin', 'super_admin'], 'manage_users'),
+  authorizeRoleOrPermission(['admin', 'super_admin'], 'process_payments'),
   getPayablesValidation,
   handleValidationErrors,
   AccountsPayableController.getAllPayables
@@ -51,7 +51,7 @@ router.get(
 router.get(
   '/overdue',
   authenticate,
-  authorizeRoleOrPermission(['admin', 'super_admin'], 'manage_users'),
+  authorizeRoleOrPermission(['admin', 'super_admin'], 'process_payments'),
   AccountsPayableController.getOverduePayables
 );
 
@@ -59,7 +59,7 @@ router.get(
 router.get(
   '/due-soon',
   authenticate,
-  authorizeRoleOrPermission(['admin', 'super_admin'], 'manage_users'),
+  authorizeRoleOrPermission(['admin', 'super_admin'], 'process_payments'),
   dueSoonValidation,
   handleValidationErrors,
   AccountsPayableController.getDueSoonPayables
@@ -69,7 +69,7 @@ router.get(
 router.get(
   '/entity/:entityId',
   authenticate,
-  authorizeRoleOrPermission(['admin', 'super_admin'], 'manage_users'),
+  authorizeRoleOrPermission(['admin', 'super_admin'], 'process_payments'),
   entityIdParamValidation,
   handleValidationErrors,
   AccountsPayableController.getPayablesByEntity
@@ -79,7 +79,7 @@ router.get(
 router.get(
   '/:id',
   authenticate,
-  authorizeRoleOrPermission(['admin', 'super_admin'], 'manage_users'),
+  authorizeRoleOrPermission(['admin', 'super_admin'], 'process_payments'),
   payableIdValidation,
   handleValidationErrors,
   AccountsPayableController.getPayableById
@@ -101,7 +101,7 @@ router.put(
 router.put(
   '/:id/mark-paid',
   authenticate,
-  authorizeRoleOrPermission(['admin', 'super_admin'], 'manage_users'),
+  authorizeRoleOrPermission(['admin', 'super_admin'], 'process_payments'),
   payableIdValidation,
   markAsPaidValidation,
   handleValidationErrors,

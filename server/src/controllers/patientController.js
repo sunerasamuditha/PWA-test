@@ -24,11 +24,17 @@ class PatientController {
    */
   static updatePatientProfile = asyncHandler(async (req, res) => {
     const userId = req.user.id;
+    
+    // Capture before state
+    const beforeProfile = await PatientService.getPatientByUserId(userId);
+    res.locals.beforeData = beforeProfile;
+    
     const updateData = req.body;
     
     const updatedProfile = await PatientService.updatePatientProfile(userId, updateData);
     
-    // Store updated patient data for audit logging
+    // Capture after state and store updated patient data for audit logging
+    res.locals.afterData = updatedProfile;
     res.locals.updatedPatient = updatedProfile;
     
     res.status(200).json({
@@ -128,9 +134,17 @@ class PatientController {
    */
   static updatePatientById = asyncHandler(async (req, res) => {
     const userId = req.params.userId;
+    
+    // Capture before state
+    const beforeProfile = await PatientService.getPatientByUserId(userId);
+    res.locals.beforeData = beforeProfile;
+    
     const updateData = req.body;
     
     const updatedProfile = await PatientService.updatePatientProfile(userId, updateData);
+    
+    // Capture after state
+    res.locals.afterData = updatedProfile;
     
     res.status(200).json({
       success: true,
@@ -146,7 +160,14 @@ class PatientController {
   static deletePatient = asyncHandler(async (req, res) => {
     const userId = req.params.userId;
     
+    // Capture before state (what's being deleted)
+    const beforePatient = await PatientService.getPatientByUserId(userId);
+    res.locals.beforeData = beforePatient;
+    
     await PatientService.deletePatientByUserId(userId);
+    
+    // Mark as deleted in after state
+    res.locals.afterData = { deleted: true, deletedAt: new Date().toISOString() };
     
     res.status(200).json({
       success: true,

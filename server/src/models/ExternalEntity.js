@@ -17,7 +17,7 @@ class ExternalEntity {
       WHERE id = ?
     `;
 
-    const [rows] = await executeQuery(query, [id], connection);
+    const rows = await executeQuery(query, [id], connection);
     
     if (rows.length === 0) {
       return null;
@@ -66,7 +66,7 @@ class ExternalEntity {
 
     // Get total count
     const countQuery = `SELECT COUNT(*) as total FROM External_Entities ${whereClause}`;
-    const [countRows] = await executeQuery(countQuery, params);
+    const countRows = await executeQuery(countQuery, params);
     const total = countRows[0].total;
 
     // Get paginated results
@@ -78,7 +78,7 @@ class ExternalEntity {
       LIMIT ? OFFSET ?
     `;
 
-    const [rows] = await executeQuery(query, [...params, limit, offset]);
+    const rows = await executeQuery(query, [...params, limit, offset]);
 
     const entities = rows.map(row => this._transformExternalEntity(row));
 
@@ -116,7 +116,7 @@ class ExternalEntity {
     `;
 
     const contactInfoJson = JSON.stringify(contact_info);
-    const [result] = await executeQuery(query, [name, type, contactInfoJson], connection);
+    const result = await executeQuery(query, [name, type, contactInfoJson], connection);
 
     return this.findById(result.insertId, connection);
   }
@@ -176,7 +176,7 @@ class ExternalEntity {
    */
   static async deleteById(id) {
     const query = 'DELETE FROM External_Entities WHERE id = ?';
-    const [result] = await executeQuery(query, [id]);
+    const result = await executeQuery(query, [id]);
     
     return result.affectedRows > 0;
   }
@@ -192,7 +192,7 @@ class ExternalEntity {
     }
 
     const query = 'SELECT COUNT(*) as count FROM External_Entities WHERE type = ?';
-    const [rows] = await executeQuery(query, [type]);
+    const rows = await executeQuery(query, [type]);
     
     return rows[0].count;
   }
@@ -208,7 +208,7 @@ class ExternalEntity {
       GROUP BY type
     `;
 
-    const [rows] = await executeQuery(query);
+    const rows = await executeQuery(query);
     return rows;
   }
 
@@ -229,7 +229,7 @@ class ExternalEntity {
       ORDER BY name ASC
     `;
 
-    const [rows] = await executeQuery(query, [type]);
+    const rows = await executeQuery(query, [type]);
     
     return rows.map(row => this._transformExternalEntity(row));
   }
@@ -248,7 +248,7 @@ class ExternalEntity {
       LIMIT 20
     `;
 
-    const [rows] = await executeQuery(query, [`%${searchTerm}%`]);
+    const rows = await executeQuery(query, [`%${searchTerm}%`]);
     
     return rows.map(row => this._transformExternalEntity(row));
   }

@@ -118,6 +118,11 @@ const getInvoiceById = async (req, res, next) => {
 const updateInvoice = async (req, res, next) => {
   try {
     const invoiceId = parseInt(req.params.id);
+    
+    // Capture before state
+    const beforeInvoice = await invoiceService.getInvoiceById(invoiceId, req.user.id, req.user.role);
+    res.locals.beforeData = beforeInvoice;
+    
     const updateData = {
       total_amount: req.body.total_amount,
       status: req.body.status,
@@ -134,7 +139,8 @@ const updateInvoice = async (req, res, next) => {
 
     const invoice = await invoiceService.updateInvoice(invoiceId, updateData, req.user.id);
 
-    // Store for audit logging
+    // Capture after state and store for audit logging
+    res.locals.afterData = invoice;
     res.locals.auditData = {
       invoice,
       action: 'update'

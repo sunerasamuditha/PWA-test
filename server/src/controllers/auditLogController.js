@@ -202,15 +202,66 @@ const exportAuditLogs = async (req, res, next) => {
       endDate: req.query.endDate || null
     };
 
+    const format = req.query.format || 'json';
     const logs = await AuditLogService.exportAuditLogs(req.user, options);
 
-    // Return as JSON (client can convert to CSV)
-    res.status(200).json({
-      success: true,
-      data: logs,
-      count: logs.length,
-      exportDate: new Date().toISOString()
-    });
+    // Handle CSV format
+    if (format === 'csv') {
+      // Set CSV headers
+      const filename = `audit_logs_${new Date().toISOString().split('T')[0]}.csv`;
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+      // Generate CSV header row
+      const csvHeaders = [
+        'ID',
+        'Timestamp',
+        'User ID',
+        'User Name',
+        'User Email',
+        'User Role',
+        'Action',
+        'Target Entity',
+        'Target ID',
+        'IP Address',
+        'User Agent',
+        'Details Before',
+        'Details After'
+      ];
+
+      // Write CSV header
+      res.write(csvHeaders.map(h => `"${h}"`).join(',') + '\n');
+
+      // Stream CSV rows
+      for (const log of logs) {
+        const row = [
+          log.id || '',
+          log.timestamp || '',
+          log.userId || '',
+          log.user?.name || '',
+          log.user?.email || '',
+          log.user?.role || '',
+          log.action || '',
+          log.targetEntity || '',
+          log.targetId || '',
+          log.ipAddress || '',
+          (log.userAgent || '').replace(/"/g, '""'), // Escape quotes
+          log.detailsBefore ? JSON.stringify(log.detailsBefore).replace(/"/g, '""') : '',
+          log.detailsAfter ? JSON.stringify(log.detailsAfter).replace(/"/g, '""') : ''
+        ];
+        res.write(row.map(v => `"${v}"`).join(',') + '\n');
+      }
+
+      res.end();
+    } else {
+      // Return JSON format (default)
+      res.status(200).json({
+        success: true,
+        data: logs,
+        count: logs.length,
+        exportDate: new Date().toISOString()
+      });
+    }
   } catch (error) {
     console.error('Error in exportAuditLogs controller:', error);
     next(error);

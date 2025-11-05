@@ -204,7 +204,7 @@ class PatientService {
         `;
         
         try {
-          const [appointments] = await executeQuery(appointmentQuery, appointmentParams);
+          const appointments = await executeQuery(appointmentQuery, appointmentParams);
           healthEvents.push(...appointments.map(apt => ({
             type: 'appointment',
             date: apt.date,
@@ -252,7 +252,7 @@ class PatientService {
         `;
         
         try {
-          const [invoices] = await executeQuery(invoiceQuery, invoiceParams);
+          const invoices = await executeQuery(invoiceQuery, invoiceParams);
           healthEvents.push(...invoices.map(inv => ({
             type: 'invoice',
             date: inv.created_at,
@@ -300,7 +300,7 @@ class PatientService {
         `;
         
         try {
-          const [documents] = await executeQuery(documentQuery, documentParams);
+          const documents = await executeQuery(documentQuery, documentParams);
           healthEvents.push(...documents.map(doc => ({
             type: 'document',
             date: doc.uploaded_at,
@@ -534,7 +534,7 @@ class PatientService {
     `;
     
     const searchPattern = `%${searchTerm}%`;
-    const [patients] = await executeQuery(query, [searchPattern, searchPattern, searchPattern, limit]);
+    const patients = await executeQuery(query, [searchPattern, searchPattern, searchPattern, limit]);
     
     return patients.map(patient => ({
       id: patient.id,

@@ -109,8 +109,8 @@ class AuditLog {
         ${whereClause}
       `;
 
-      const [countResult] = await executeQuery(countQuery, queryParams);
-      const total = countResult[0].total;
+      const countRows = await executeQuery(countQuery, queryParams);
+      const total = countRows[0].total;
 
       // Get paginated results
       const offset = (page - 1) * limit;
@@ -137,7 +137,7 @@ class AuditLog {
       `;
 
       queryParams.push(parseInt(limit), parseInt(offset));
-      const [rows] = await executeQuery(query, queryParams);
+      const rows = await executeQuery(query, queryParams);
 
       const logs = rows.map(row => this._transformAuditLog(row));
 
@@ -204,7 +204,7 @@ class AuditLog {
         WHERE al.id = ?
       `;
 
-      const [rows] = await executeQuery(query, [id]);
+      const rows = await executeQuery(query, [id]);
 
       if (rows.length === 0) {
         return null;
@@ -316,8 +316,8 @@ class AuditLog {
         ${whereClause}
       `;
 
-      const [countResult] = await executeQuery(countQuery, queryParams);
-      const total = countResult[0].total;
+      const countRows = await executeQuery(countQuery, queryParams);
+      const total = countRows[0].total;
 
       // Get results
       const offset = (page - 1) * limit;
@@ -344,7 +344,7 @@ class AuditLog {
       `;
 
       queryParams.push(parseInt(limit), parseInt(offset));
-      const [rows] = await executeQuery(query, queryParams);
+      const rows = await executeQuery(query, queryParams);
 
       const logs = rows.map(row => this._transformAuditLog(row));
 
@@ -401,7 +401,7 @@ class AuditLog {
         ORDER BY count DESC
       `;
 
-      const [rows] = await executeQuery(query, queryParams);
+      const rows = await executeQuery(query, queryParams);
 
       const entityQuery = `
         SELECT 
@@ -414,7 +414,7 @@ class AuditLog {
         LIMIT 10
       `;
 
-      const [entityRows] = await executeQuery(entityQuery, queryParams);
+      const entityRows = await executeQuery(entityQuery, queryParams);
 
       return {
         byAction: rows,
@@ -517,7 +517,7 @@ class AuditLog {
         LIMIT 10000
       `;
 
-      const [rows] = await executeQuery(query, queryParams);
+      const rows = await executeQuery(query, queryParams);
       return rows.map(row => this._transformAuditLog(row));
     } catch (error) {
       console.error('Error exporting audit logs:', error);
@@ -556,7 +556,7 @@ class AuditLog {
         LIMIT ?
       `;
 
-      const [rows] = await executeQuery(query, [parseInt(limit)]);
+      const rows = await executeQuery(query, [parseInt(limit)]);
       return rows.map(row => this._transformAuditLog(row));
     } catch (error) {
       console.error('Error getting recent critical actions:', error);
@@ -604,7 +604,7 @@ class AuditLog {
         ORDER BY al.timestamp DESC
       `;
 
-      const [rows] = await executeQuery(query, []);
+      const rows = await executeQuery(query, []);
       return rows.map(row => this._transformAuditLog(row));
     } catch (error) {
       console.error('Error getting failed logins:', error);

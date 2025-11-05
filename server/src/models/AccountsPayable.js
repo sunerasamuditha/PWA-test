@@ -32,7 +32,7 @@ class AccountsPayable {
       WHERE ap.id = ?
     `;
 
-    const [rows] = await executeQuery(query, [id], connection);
+    const rows = await executeQuery(query, [id], connection);
     
     if (rows.length === 0) {
       return null;
@@ -84,7 +84,7 @@ class AccountsPayable {
 
     // Get total count
     const countQuery = `SELECT COUNT(*) as total FROM Accounts_Payable ap ${whereClause}`;
-    const [countRows] = await executeQuery(countQuery, params);
+    const countRows = await executeQuery(countQuery, params);
     const total = countRows[0].total;
 
     // Get paginated results
@@ -96,11 +96,11 @@ class AccountsPayable {
       FROM Accounts_Payable ap
       LEFT JOIN External_Entities ee ON ap.entity_id = ee.id
       ${whereClause}
-      ORDER BY ap.due_date ASC
+      ORDER BY ap.${dateColumn} ASC
       LIMIT ? OFFSET ?
     `;
 
-    const [rows] = await executeQuery(query, [...params, limit, offset]);
+    const rows = await executeQuery(query, [...params, limit, offset]);
     const payables = rows.map(row => this._transformAccountsPayable(row));
 
     return {
@@ -179,7 +179,7 @@ class AccountsPayable {
 
     // Get total count
     const countQuery = `SELECT COUNT(*) as total FROM Accounts_Payable ap ${whereClause}`;
-    const [countRows] = await executeQuery(countQuery, params);
+    const countRows = await executeQuery(countQuery, params);
     const total = countRows[0].total;
 
     // Get paginated results
@@ -195,7 +195,7 @@ class AccountsPayable {
       LIMIT ? OFFSET ?
     `;
 
-    const [rows] = await executeQuery(query, [...params, limit, offset]);
+    const rows = await executeQuery(query, [...params, limit, offset]);
     const payables = rows.map(row => this._transformAccountsPayable(row));
 
     return {
@@ -231,7 +231,7 @@ class AccountsPayable {
       VALUES (?, ?, ?, ?, ?, 'due', ?)
     `;
 
-    const [result] = await executeQuery(
+    const result = await executeQuery(
       query,
       [entity_id, reference_code, description, total_amount, due_date, notes],
       connection
@@ -351,7 +351,7 @@ class AccountsPayable {
       WHERE due_date < CURDATE() AND status = 'due'
     `;
 
-    const [result] = await executeQuery(query);
+    const result = await executeQuery(query);
 
     return result.affectedRows;
   }
@@ -372,7 +372,7 @@ class AccountsPayable {
       ORDER BY ap.due_date ASC
     `;
 
-    const [rows] = await executeQuery(query);
+    const rows = await executeQuery(query);
 
     return rows.map(row => this._transformAccountsPayable(row));
   }
@@ -396,7 +396,7 @@ class AccountsPayable {
       ORDER BY ap.due_date ASC
     `;
 
-    const [rows] = await executeQuery(query, [daysAhead]);
+    const rows = await executeQuery(query, [daysAhead]);
 
     return rows.map(row => this._transformAccountsPayable(row));
   }
@@ -420,7 +420,7 @@ class AccountsPayable {
       params.push(status);
     }
 
-    const [rows] = await executeQuery(query, params);
+    const rows = await executeQuery(query, params);
 
     return parseFloat(rows[0].total);
   }
@@ -432,7 +432,7 @@ class AccountsPayable {
   static async getPayableStats() {
     // Total payables
     const totalQuery = 'SELECT COUNT(*) as total FROM Accounts_Payable';
-    const [totalRows] = await executeQuery(totalQuery);
+    const totalRows = await executeQuery(totalQuery);
     const totalPayables = totalRows[0].total;
 
     // Amount by status
@@ -444,7 +444,7 @@ class AccountsPayable {
       FROM Accounts_Payable
       GROUP BY status
     `;
-    const [statusRows] = await executeQuery(statusQuery);
+    const statusRows = await executeQuery(statusQuery);
 
     const statusStats = {
       due: { count: 0, amount: 0 },
@@ -465,7 +465,7 @@ class AccountsPayable {
       FROM Accounts_Payable
       WHERE status = 'due' AND due_date <= DATE_ADD(CURDATE(), INTERVAL 7 DAY)
     `;
-    const [dueSoonRows] = await executeQuery(dueSoonQuery);
+    const dueSoonRows = await executeQuery(dueSoonQuery);
 
     // Payables by entity type
     const entityTypeQuery = `
@@ -477,7 +477,7 @@ class AccountsPayable {
       LEFT JOIN External_Entities ee ON ap.entity_id = ee.id
       GROUP BY ee.type
     `;
-    const [entityTypeRows] = await executeQuery(entityTypeQuery);
+    const entityTypeRows = await executeQuery(entityTypeQuery);
 
     const byEntityType = {};
     entityTypeRows.forEach(row => {

@@ -16,7 +16,7 @@ class InvoiceItem {
       ORDER BY ii.id
     `;
     
-    const [rows] = await executeQuery(query, [invoiceId], connection);
+    const rows = await executeQuery(query, [invoiceId], connection);
     return rows.map(row => this._transformInvoiceItem(row));
   }
 
@@ -56,7 +56,7 @@ class InvoiceItem {
       total_price
     ];
 
-    const [result] = await executeQuery(query, params, connection);
+    const result = await executeQuery(query, params, connection);
     
     // Fetch and return the created item
     const fetchQuery = `
@@ -68,7 +68,7 @@ class InvoiceItem {
       LEFT JOIN Services s ON ii.service_id = s.id
       WHERE ii.id = ?
     `;
-    const [rows] = await executeQuery(fetchQuery, [result.insertId], connection);
+    const rows = await executeQuery(fetchQuery, [result.insertId], connection);
     return rows.length > 0 ? this._transformInvoiceItem(rows[0]) : null;
   }
 
@@ -129,7 +129,7 @@ class InvoiceItem {
     // If quantity or unit_price is updated, recalculate total_price
     if (itemData.quantity !== undefined || itemData.unit_price !== undefined) {
       // Fetch current item
-      const [currentRows] = await executeQuery('SELECT * FROM Invoice_Items WHERE id = ?', [id], connection);
+      const currentRows = await executeQuery('SELECT * FROM Invoice_Items WHERE id = ?', [id], connection);
       if (currentRows.length === 0) {
         throw new Error('Invoice item not found');
       }
@@ -167,7 +167,7 @@ class InvoiceItem {
       LEFT JOIN Services s ON ii.service_id = s.id
       WHERE ii.id = ?
     `;
-    const [rows] = await executeQuery(fetchQuery, [id], connection);
+    const rows = await executeQuery(fetchQuery, [id], connection);
     return rows.length > 0 ? this._transformInvoiceItem(rows[0]) : null;
   }
 
@@ -185,7 +185,7 @@ class InvoiceItem {
    */
   static async deleteByInvoiceId(invoiceId, connection = null) {
     const query = 'DELETE FROM Invoice_Items WHERE invoice_id = ?';
-    const [result] = await executeQuery(query, [invoiceId], connection);
+    const result = await executeQuery(query, [invoiceId], connection);
     return { deleted: result.affectedRows };
   }
 
@@ -199,7 +199,7 @@ class InvoiceItem {
       WHERE invoice_id = ?
     `;
     
-    const [rows] = await executeQuery(query, [invoiceId], connection);
+    const rows = await executeQuery(query, [invoiceId], connection);
     return parseFloat(rows[0].total);
   }
 

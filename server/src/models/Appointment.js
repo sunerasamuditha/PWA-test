@@ -67,7 +67,7 @@ class Appointment {
       WHERE a.id = ?
     `;
     
-    const [results] = await executeQuery(query, [id], connection);
+    const results = await executeQuery(query, [id], connection);
     return results.length > 0 ? this._transformAppointment(results[0]) : null;
   }
 
@@ -146,7 +146,7 @@ class Appointment {
       ${endDate ? 'AND a.appointment_datetime <= ?' : ''}
     `;
     const countParams = [...params];
-    const [countResult] = await executeQuery(countQuery, countParams);
+    const countResult = await executeQuery(countQuery, countParams);
     const total = countResult[0].total;
 
     // Add sorting
@@ -160,7 +160,7 @@ class Appointment {
     query += ' LIMIT ? OFFSET ?';
     params.push(limit, offset);
 
-    const [results] = await executeQuery(query, params);
+    const results = await executeQuery(query, params);
     
     return {
       appointments: results.map(apt => this._transformAppointment(apt)),
@@ -226,7 +226,7 @@ class Appointment {
       notes || null
     ];
 
-    const [result] = await executeQuery(query, params, connection);
+    const result = await executeQuery(query, params, connection);
     
     // Fetch and return the created appointment
     return await this.findById(result.insertId, connection);
@@ -282,7 +282,7 @@ class Appointment {
    */
   static async deleteById(id) {
     const query = 'DELETE FROM `Appointments` WHERE id = ?';
-    const [result] = await executeQuery(query, [id]);
+    const result = await executeQuery(query, [id]);
     return result.affectedRows > 0;
   }
 
@@ -367,7 +367,7 @@ class Appointment {
       ${endDate ? 'AND a.appointment_datetime <= ?' : ''}
     `;
     const countParams = [...params];
-    const [countResult] = await executeQuery(countQuery, countParams);
+    const countResult = await executeQuery(countQuery, countParams);
     const total = countResult[0].total;
 
     // Add sorting
@@ -386,7 +386,7 @@ class Appointment {
     query += ' LIMIT ? OFFSET ?';
     params.push(limit, offset);
 
-    const [results] = await executeQuery(query, params);
+    const results = await executeQuery(query, params);
     
     return {
       appointments: results.map(apt => this._transformAppointment(apt)),
@@ -425,7 +425,7 @@ class Appointment {
       ? [patientUserId, utcDatetime, utcDatetime, excludeAppointmentId]
       : [patientUserId, utcDatetime, utcDatetime];
 
-    const [results] = await executeQuery(query, params);
+    const results = await executeQuery(query, params);
     return results[0].count > 0;
   }
 
@@ -436,7 +436,7 @@ class Appointment {
    */
   static async countByStatus(status) {
     const query = 'SELECT COUNT(*) as count FROM `Appointments` WHERE status = ?';
-    const [results] = await executeQuery(query, [status]);
+    const results = await executeQuery(query, [status]);
     return results[0].count;
   }
 
@@ -460,7 +460,7 @@ class Appointment {
       params.push(status);
     }
 
-    const [results] = await executeQuery(query, params);
+    const results = await executeQuery(query, params);
     return results[0].count;
   }
 

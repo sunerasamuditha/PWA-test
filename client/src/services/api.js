@@ -31,6 +31,16 @@ function isRetryableRequest(config) {
   return true;
 }
 
+// Create bare axios instance for auth refresh (no interceptors to prevent recursion)
+const authRefreshApi = axios.create({
+  baseURL: '/api',
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  withCredentials: true,
+});
+
 // Create axios instance with default configuration
 const api = axios.create({
   baseURL: '/api', // Vite proxy will forward this to http://localhost:5000/api
@@ -89,8 +99,9 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        // Attempt to refresh token using apiService.auth.refreshToken()
-        const newToken = await apiService.auth.refreshToken();
+        // Use bare axios instance to prevent interceptor recursion
+        const refreshResponse = await authRefreshApi.post('/auth/refresh');
+        const newToken = refreshResponse.data.token;
         
         localStorage.setItem('wecare_token', newToken);
 
@@ -743,14 +754,16 @@ export const apiService = {
       return response.data;
     },
     async subscribe(subscription) {
-      // Transform PushSubscription to server format and wrap in { subscription }
+      // Subscription is already serialized from pushNotifications.js
+      // Ensure it has the correct structure
       const subscriptionPayload = {
         endpoint: subscription.endpoint,
         keys: {
-          p256dh: subscription.keys.p256dh,
-          auth: subscription.keys.auth
+          p256dh: subscription.keys?.p256dh || subscription.keys?.p256dh,
+          auth: subscription.keys?.auth || subscription.keys?.auth
         }
       };
+      
       // Server expects { subscription: {...} }
       const response = await api.post('/notifications/subscribe', { subscription: subscriptionPayload });
       return response.data;
@@ -783,9 +796,34 @@ export const apiService = {
       const response = await api.get('/audit-logs/statistics', { params: dateRange });
       return response.data;
     },
-    async exportLogs(filters = {}) {
-      const response = await api.get('/audit-logs/export', { params: filters });
-      return response.data;
+    async export(filters = {}) {
+      // Check if CSV format is requested
+      const format = filters.format || 'json';
+      
+      if (format === 'csv') {
+        // Request CSV with blob response type
+        const response = await api.get('/audit-logs/export', { 
+          params: filters,
+          responseType: 'blob'
+        });
+        
+        // Create download link for CSV
+        const blob = new Blob([response.data], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `audit_logs_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        
+        return { success: true, message: 'CSV download initiated' };
+      } else {
+        // Return JSON format
+        const response = await api.get('/audit-logs/export', { params: filters });
+        return response.data;
+      }
     },
     async getMyTrail(options = {}) {
       const response = await api.get('/audit-logs/my-trail', { params: options });

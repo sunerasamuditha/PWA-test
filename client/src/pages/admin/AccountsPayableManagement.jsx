@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { apiService } from '../../services/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import ErrorMessage from '../../components/ErrorMessage';
@@ -13,6 +14,7 @@ import {
 } from '../../utils/validation';
 
 const AccountsPayableManagement = () => {
+  const location = useLocation();
   const [payables, setPayables] = useState([]);
   const [entities, setEntities] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -53,6 +55,17 @@ const AccountsPayableManagement = () => {
     fetchEntities();
     fetchStats();
   }, []);
+
+  // Parse URL query params on mount to apply deep-link filters
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const entityIdParam = searchParams.get('entity_id') || searchParams.get('entity'); // Support both for backwards compatibility
+    
+    if (entityIdParam && entityIdParam !== entityFilter) {
+      setEntityFilter(entityIdParam);
+      setCurrentPage(1);
+    }
+  }, [location.search]); // Only run when URL changes
 
   useEffect(() => {
     fetchPayables();
@@ -158,9 +171,9 @@ const AccountsPayableManagement = () => {
     }
   };
 
-  const handleMarkPaidSubmit = async (formData) => {
+  const handleMarkPaidSubmit = async (id, formData) => {
     try {
-      await apiService.accountsPayable.markAsPaid(selectedPayable.id, formData);
+      await apiService.accountsPayable.markAsPaid(id, formData);
       handleMarkPaidSuccess();
     } catch (err) {
       throw err; // Let modal handle the error
