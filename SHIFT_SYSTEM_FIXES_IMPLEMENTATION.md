@@ -484,6 +484,350 @@ timezone: 'local', // Use local timezone
 
 ### Comment 8: Auto-Close Stale Shifts with Cron Job ✅
 **Status:** COMPLETED  
+**Implementation:** Hourly scheduled task using node-cron with full ShiftService integration
+
+#### Architecture Overview
+
+The auto-close functionality is implemented across three layers following the verification comment requirements:
+
+1. **Model Layer** (`StaffShift.js`): Data access methods
+2. **Service Layer** (`ShiftService.js`): Business logic and audit logging
+3. **Job Layer** (`closeStaleShifts.js`): Cron scheduling and orchestration
+
+#### Model Layer Changes (`server/src/models/StaffShift.js`)
+
+**New Method: `findStaleActiveShifts(thresholdHours)`**
+```javascript
+static async findStaleActiveShifts(thresholdHours = 24) {
+  // Finds shifts with:
+  // - logout_at IS NULL (still active)
+  // - login_at <= DATE_SUB(NOW(), INTERVAL ? HOUR)
+  // Returns: id, staff_user_id, login_at, shift_type, notes, staff_name, staff_email
+}
+```
+
+**New Method: `autoCloseShift(id, logoutAt)`**
+```javascript
+static async autoCloseShift(id, logoutAt) {
+  // Updates shift:
+  // - Sets logout_at to cutoff time
+  // - Calculates total_hours = TIMESTAMPDIFF(MINUTE, login_at, logout_at) / 60.0
+  // - Appends auto-close note to existing notes
+  // - Updates updated_at timestamp
+}
+```
+
+**Key Features:**
+- Uses SQL `DATE_SUB(NOW(), INTERVAL ? HOUR)` for consistency with database time
+- Calculates precise total_hours using `TIMESTAMPDIFF` in minutes, then converts to hours
+- Preserves existing notes by appending auto-close message
+- Returns minimal fields to reduce memory footprint
+
+#### Service Layer Changes (`server/src/services/shiftService.js`)
+
+**New Method: `autoCloseStaleShifts(thresholdHours)`**
+
+```javascript
+static async autoCloseStaleShifts(thresholdHours = 24) {
+  // 1. Find stale shifts using StaffShift.findStaleActiveShifts()
+  // 2. For each shift:
+  //    - Store original state for audit
+  //    - Calculate cutoff = login_at + thresholdHours
+  //    - Call StaffShift.autoCloseShift(id, cutoff)
+  //    - Create audit log with before/after details
+  // 3. Return summary with counts, errors, closed shifts
+}
+```
+
+**Audit Logging Details:**
+- **userId**: `null` (system action)
+- **action**: `'update'`
+- **targetEntity**: `'Staff_Shifts'`
+- **targetId**: Shift ID
+- **detailsBefore**: Original shift state (login_at, logout_at=null, etc.)
+- **detailsAfter**: Updated state + metadata:
+  - `auto_closed: true`
+  - `reason: "Auto-closed: shift exceeded X hours without logout"`
+  - `cutoff_time`: ISO timestamp of calculated cutoff
+- **ipAddress**: `'SYSTEM'`
+- **userAgent**: `'Cron Job - Auto Close Stale Shifts'`
+
+**Return Value:**
+```javascript
+{
+  totalFound: 5,
+  successfullyClosed: 5,
+  failed: 0,
+  errors: [],
+  closedShifts: [...], // Array of closed shift objects
+  durationSeconds: 0.45
+}
+```
+
+#### Job Layer Implementation (`server/src/jobs/closeStaleShifts.js`)
+
+**Completely Refactored to Use ShiftService:**
+
+**BEFORE (direct database access):**
+```javascript
+// Old implementation queried DB directly
+const staleShifts = await executeQuery('SELECT...');
+for (shift of staleShifts) {
+  await executeQuery('UPDATE...');
+  await createAuditLog(...);
+}
+```
+
+**AFTER (service-based):**
+```javascript
+class StaleShiftCloser {
+  constructor() {
+    this.thresholdHours = parseInt(process.env.SHIFT_AUTOCLOSE_THRESHOLD_HOURS) || 24;
+    this.cronSchedule = process.env.SHIFT_AUTOCLOSE_CRON || '0 * * * *';
+  }
+
+  async run() {
+    // Single call to ShiftService handles everything
+    const result = await ShiftService.autoCloseStaleShifts(this.thresholdHours);
+    
+    if (result.successfullyClosed > 0) {
+      console.log(`📧 ${result.successfullyClosed} shift(s) auto-closed`);
+    }
+    
+    return result;
+  }
+}
+```
+
+**Configuration via Environment Variables:**
+
+Added to `.env`:
+```bash
+# Shift Auto-Close Configuration
+SHIFT_AUTOCLOSE_THRESHOLD_HOURS=24
+SHIFT_AUTOCLOSE_CRON=0 * * * *
+```
+
+**Cron Schedule Examples:**
+- `0 * * * *` - Every hour at :00 (default)
+- `*/30 * * * *` - Every 30 minutes
+- `0 */2 * * *` - Every 2 hours
+- `0 9 * * *` - Daily at 9:00 AM
+
+**Features:**
+- **Configurable threshold**: Change hours without code changes
+- **Configurable schedule**: Adjust frequency via environment
+- **Timezone support**: Uses `BUSINESS_TIMEZONE` from env (default: UTC)
+- **Single-run protection**: Won't run if already executing
+- **Graceful shutdown**: Stops cleanly when server terminates
+- **Manual trigger**: `staleShiftCloser.runNow()` for testing
+
+#### Server Integration (`server/src/server.js`)
+
+Already integrated (no changes needed):
+
+```javascript
+const staleShiftCloser = require('./jobs/closeStaleShifts');
+
+// On startup
+staleShiftCloser.start();
+
+// On graceful shutdown
+gracefulShutdown() {
+  staleShiftCloser.stop();
+  // ... other cleanup
+}
+```
+
+#### Auto-Close Process Flow
+
+1. **Cron Trigger** (hourly by default)
+   ```
+   [Cron Schedule] → [StaleShiftCloser.run()]
+   ```
+
+2. **Service Layer Processing**
+   ```
+   [ShiftService.autoCloseStaleShifts(24)]
+     ↓
+   [StaffShift.findStaleActiveShifts(24)] → Returns stale shifts
+     ↓
+   For each shift:
+     ↓
+   [Calculate cutoff = login_at + 24h]
+     ↓
+   [StaffShift.autoCloseShift(id, cutoff)] → Updates DB
+     ↓
+   [logAction(...)] → Creates audit log
+   ```
+
+3. **Database Updates**
+   ```sql
+   UPDATE Staff_Shifts
+   SET 
+     logout_at = '2024-11-06 14:30:00',
+     total_hours = TIMESTAMPDIFF(MINUTE, login_at, '2024-11-06 14:30:00') / 60.0,
+     notes = CONCAT(COALESCE(notes, ''), '\n', 'Auto-closed by system: ...'),
+     updated_at = NOW()
+   WHERE id = 123
+   ```
+
+4. **Audit Log Entry**
+   ```sql
+   INSERT INTO Audit_Logs (
+     user_id, action, target_entity, target_id,
+     details_before, details_after, ip_address, user_agent
+   ) VALUES (
+     NULL, 'update', 'Staff_Shifts', 123,
+     '{"login_at": "2024-11-05 14:30:00", "logout_at": null, ...}',
+     '{"login_at": "2024-11-05 14:30:00", "logout_at": "2024-11-06 14:30:00", "auto_closed": true, ...}',
+     'SYSTEM', 'Cron Job - Auto Close Stale Shifts'
+   )
+   ```
+
+#### Console Output Example
+
+```
+🔍 [2024-11-05T10:00:00.000Z] Auto-close job: checking for stale shifts (threshold: 24h)...
+⚠️  Found 3 stale shift(s) to auto-close
+  ✓ Closed shift #145 for John Doe (login: 2024-11-04 09:30:00, logout: 2024-11-05 09:30:00)
+  ✓ Closed shift #147 for Jane Smith (login: 2024-11-04 08:15:00, logout: 2024-11-05 08:15:00)
+  ✓ Closed shift #149 for Bob Johnson (login: 2024-11-04 07:45:00, logout: 2024-11-05 07:45:00)
+
+📊 Auto-close job summary:
+  - Total found: 3
+  - Successfully closed: 3
+  - Failed: 0
+  - Duration: 0.42s
+
+📧 3 shift(s) were auto-closed
+   Consider notifying admins about these closures
+```
+
+#### Testing Instructions
+
+**1. Create Test Stale Shift (SQL):**
+```sql
+INSERT INTO Staff_Shifts (staff_user_id, shift_type, login_at, logout_at)
+VALUES (
+  5,  -- Existing staff user ID
+  'day',
+  DATE_SUB(NOW(), INTERVAL 25 HOUR),  -- 25 hours ago
+  NULL  -- Still active
+);
+```
+
+**2. Manual Trigger (Node.js):**
+```javascript
+const staleShiftCloser = require('./server/src/jobs/closeStaleShifts');
+const result = await staleShiftCloser.runNow();
+
+console.log('Closed shifts:', result.successfullyClosed);
+console.log('Errors:', result.errors);
+```
+
+**3. Verify Results:**
+```sql
+-- Check shift was closed
+SELECT id, login_at, logout_at, total_hours, notes
+FROM Staff_Shifts
+WHERE id = <shift_id>;
+
+-- Check audit log entry
+SELECT user_id, action, target_entity, target_id, details_before, details_after
+FROM Audit_Logs
+WHERE target_entity = 'Staff_Shifts' 
+  AND target_id = <shift_id>
+  AND action = 'update'
+ORDER BY timestamp DESC
+LIMIT 1;
+```
+
+**Expected Results:**
+- `logout_at` = `login_at + 24 hours`
+- `total_hours` = `24.0`
+- `notes` contains "Auto-closed by system: shift exceeded threshold without logout"
+- Audit log has `user_id = NULL`, `ip_address = 'SYSTEM'`
+- Audit log `details_after` includes `auto_closed: true`
+
+#### Configuration Tuning
+
+**Adjust Threshold (e.g., 12 hours instead of 24):**
+```bash
+# .env
+SHIFT_AUTOCLOSE_THRESHOLD_HOURS=12
+```
+
+**Change Schedule (e.g., every 30 minutes):**
+```bash
+# .env
+SHIFT_AUTOCLOSE_CRON=*/30 * * * *
+```
+
+**Set Business Timezone:**
+```bash
+# .env
+BUSINESS_TIMEZONE=America/New_York
+```
+
+Restart server for changes to take effect.
+
+#### Impact & Benefits
+
+✅ **Prevents indefinitely open shifts** - No more forgotten logouts  
+✅ **Accurate hours tracking** - Calculated precisely using SQL TIMESTAMPDIFF  
+✅ **Full audit trail** - Every auto-closure logged with before/after state  
+✅ **Configurable** - Adjust threshold and schedule without code changes  
+✅ **Production-ready** - Error handling, logging, graceful shutdown  
+✅ **Testable** - Manual trigger for development/testing  
+✅ **Scalable** - Service layer handles all logic, job layer is thin orchestrator  
+✅ **Maintains data integrity** - Corrects hours for payroll accuracy  
+✅ **Admin visibility** - Console logs and audit trail for monitoring  
+
+#### Alignment with Verification Comment Requirements
+
+**✅ Requirement 1: ShiftService.autoCloseStaleShifts()**
+- Implemented with configurable `thresholdHours` parameter
+- Uses `executeQuery` via `StaffShift` model methods
+- Computes cutoff as `login_at + thresholdHours`
+- Updates `logout_at` and `total_hours` via model method
+- Creates audit log with full before/after details
+
+**✅ Requirement 2: StaffShift Helper Methods**
+- `findStaleActiveShifts(thresholdHours)` - Returns minimal fields
+- `autoCloseShift(id, logoutAt)` - Updates with TIMESTAMPDIFF calculation
+
+**✅ Requirement 3: Cron Job Registration**
+- Registered in `server/src/server.js` on startup
+- Uses `node-cron` with configurable schedule
+- Logs start/end and counts
+- Catches and logs errors without crashing
+
+**✅ Requirement 4: Environment Variables**
+- `SHIFT_AUTOCLOSE_THRESHOLD_HOURS` - Threshold configuration
+- `SHIFT_AUTOCLOSE_CRON` - Schedule configuration
+- Sensible defaults: 24 hours, hourly execution
+
+**✅ Requirement 5: Impact Verification**
+- Admin dashboards and reports reflect corrected hours
+- Monthly shift reports include auto-closed shifts
+- Total hours calculations accurate for payroll
+
+**✅ Requirement 6: Testing Support**
+- Manual trigger via `runNow()` method
+- Seed test data with SQL INSERT
+- Audit logs confirm before/after state
+- Console logs verify execution
+
+**✅ Timezone Consistency**
+- Uses local time (`timezone: 'local'` in DB pool)
+- Cron schedule respects `BUSINESS_TIMEZONE`
+- Audit logs use ISO timestamps
+
+---
+
+### Comment 8: Auto-Close Stale Shifts with Cron Job ✅
+**Status:** COMPLETED  
 **Implementation:** Hourly scheduled task using node-cron
 
 #### New Files Created:

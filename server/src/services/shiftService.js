@@ -2,6 +2,32 @@ const { StaffShift, SHIFT_TYPES } = require('../models/StaffShift');
 const User = require('../models/User');
 const { AppError } = require('../middleware/errorHandler');
 
+/**
+ * ShiftService - Business logic for staff shift tracking
+ * 
+ * Features:
+ * - Manual shift start/end by staff members
+ * - Automatic shift type detection based on login time
+ * - Admin shift management (view all, update manually)
+ * - Monthly reports and statistics
+ * - Auto-close stale shifts (configured via cron job)
+ * 
+ * Auto-Close Functionality:
+ * The autoCloseStaleShifts() method automatically closes shifts that remain
+ * open beyond a threshold (default 24 hours). This prevents indefinitely open
+ * shifts when staff forget to log out, ensuring accurate hours and payroll.
+ * 
+ * Configuration (via environment variables):
+ * - SHIFT_AUTOCLOSE_THRESHOLD_HOURS: Hours before shift is considered stale (default: 24)
+ * - SHIFT_AUTOCLOSE_CRON: Cron schedule for auto-close job (default: '0 * * * *')
+ * 
+ * The auto-close job:
+ * 1. Finds shifts with logout_at IS NULL and login_at older than threshold
+ * 2. Sets logout_at to login_at + threshold hours
+ * 3. Calculates total_hours using TIMESTAMPDIFF
+ * 4. Creates audit log entries for each auto-closed shift
+ * 5. Returns summary of closed shifts for admin notifications
+ */
 class ShiftService {
   static async startShift(staffUserId, loginAt) {
     // Validate staff exists
@@ -357,6 +383,135 @@ class ShiftService {
     }
 
     return true;
+  }
+
+  /**
+   * Auto-close stale active shifts older than threshold
+   * @param {number} thresholdHours - Number of hours after which to consider a shift stale (default 24)
+   * @returns {Promise<object>} Summary of auto-closed shifts
+   */
+  static async autoCloseStaleShifts(thresholdHours = 24) {
+    const { logAction } = require('../middleware/auditLog');
+    const startTime = new Date();
+    
+    try {
+      console.log(`\n🔍 [${startTime.toISOString()}] Auto-close job: checking for stale shifts (threshold: ${thresholdHours}h)...`);
+
+      // Find stale shifts using model method
+      const staleShifts = await StaffShift.findStaleActiveShifts(thresholdHours);
+
+      if (!staleShifts || staleShifts.length === 0) {
+        console.log('✅ No stale shifts found');
+        return {
+          totalFound: 0,
+          successfullyClosed: 0,
+          failed: 0,
+          errors: []
+        };
+      }
+
+      console.log(`⚠️  Found ${staleShifts.length} stale shift(s) to auto-close`);
+
+      let closedCount = 0;
+      let failedCount = 0;
+      const errors = [];
+      const closedShifts = [];
+
+      // Process each stale shift
+      for (const shift of staleShifts) {
+        try {
+          // Store original state for audit
+          const originalShift = { ...shift };
+
+          // Calculate cutoff time: login_at + thresholdHours
+          const cutoffTime = new Date(shift.loginAt);
+          cutoffTime.setHours(cutoffTime.getHours() + thresholdHours);
+
+          // Auto-close the shift using model method
+          const closedShift = await StaffShift.autoCloseShift(shift.id, cutoffTime);
+
+          closedCount++;
+          closedShifts.push(closedShift);
+
+          console.log(`  ✓ Closed shift #${shift.id} for ${shift.staffName} (login: ${shift.loginAt}, logout: ${cutoffTime.toISOString()})`);
+
+          // Create audit log for automatic closure
+          try {
+            await logAction({
+              userId: null, // System action
+              action: 'update',
+              targetEntity: 'Staff_Shifts',
+              targetId: shift.id,
+              detailsBefore: {
+                id: originalShift.id,
+                staff_user_id: originalShift.staffUserId,
+                staff_name: originalShift.staffName,
+                staff_email: originalShift.staffEmail,
+                login_at: originalShift.loginAt,
+                logout_at: null,
+                shift_type: originalShift.shiftType,
+                notes: originalShift.notes
+              },
+              detailsAfter: {
+                id: closedShift.id,
+                staff_user_id: closedShift.staffUserId,
+                staff_name: closedShift.staffName,
+                login_at: closedShift.loginAt,
+                logout_at: closedShift.logoutAt,
+                total_hours: closedShift.totalHours,
+                shift_type: closedShift.shiftType,
+                notes: closedShift.notes,
+                auto_closed: true,
+                reason: `Auto-closed: shift exceeded ${thresholdHours} hours without logout`,
+                cutoff_time: cutoffTime.toISOString()
+              },
+              ipAddress: 'SYSTEM',
+              userAgent: 'Cron Job - Auto Close Stale Shifts'
+            });
+          } catch (auditError) {
+            console.warn(`  ⚠️  Failed to create audit log for shift #${shift.id}:`, auditError.message);
+          }
+
+        } catch (error) {
+          failedCount++;
+          errors.push({
+            shiftId: shift.id,
+            staffName: shift.staffName,
+            error: error.message
+          });
+          console.error(`  ✗ Failed to close shift #${shift.id}:`, error.message);
+        }
+      }
+
+      const endTime = new Date();
+      const duration = (endTime - startTime) / 1000;
+
+      console.log(`\n📊 Auto-close job summary:`);
+      console.log(`  - Total found: ${staleShifts.length}`);
+      console.log(`  - Successfully closed: ${closedCount}`);
+      console.log(`  - Failed: ${failedCount}`);
+      console.log(`  - Duration: ${duration.toFixed(2)}s`);
+
+      if (errors.length > 0) {
+        console.error(`\n❌ Errors encountered:`);
+        errors.forEach(err => {
+          console.error(`  - Shift #${err.shiftId} (${err.staffName}): ${err.error}`);
+        });
+      }
+
+      return {
+        totalFound: staleShifts.length,
+        successfullyClosed: closedCount,
+        failed: failedCount,
+        errors,
+        closedShifts,
+        durationSeconds: duration
+      };
+
+    } catch (error) {
+      console.error('❌ Auto-close stale shifts job failed:', error);
+      throw new AppError(`Auto-close stale shifts failed: ${error.message}`, 500);
+    }
   }
 }
 

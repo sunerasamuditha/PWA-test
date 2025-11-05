@@ -362,6 +362,66 @@ class StaffShift {
   }
 
   /**
+   * Find stale active shifts (shifts still open beyond threshold)
+   * @param {number} thresholdHours - Number of hours after which a shift is considered stale
+   * @returns {Promise<Array>} Array of stale shifts with minimal fields
+   */
+  static async findStaleActiveShifts(thresholdHours = 24) {
+    const query = `
+      SELECT 
+        s.id,
+        s.staff_user_id,
+        s.login_at,
+        s.shift_type,
+        s.notes,
+        u.full_name as staff_name,
+        u.email as staff_email
+      FROM Staff_Shifts s
+      LEFT JOIN Users u ON s.staff_user_id = u.id
+      WHERE s.logout_at IS NULL
+        AND s.login_at <= DATE_SUB(NOW(), INTERVAL ? HOUR)
+      ORDER BY s.login_at ASC
+    `;
+
+    const rows = await executeQuery(query, [thresholdHours]);
+    return rows.map(row => ({
+      id: row.id,
+      staffUserId: row.staff_user_id,
+      loginAt: row.login_at,
+      shiftType: row.shift_type,
+      notes: row.notes,
+      staffName: row.staff_name,
+      staffEmail: row.staff_email
+    }));
+  }
+
+  /**
+   * Auto-close a shift by setting logout_at and calculating total_hours
+   * Similar to endShift but specifically for automated closure
+   * @param {number} id - Shift ID
+   * @param {Date|string} logoutAt - Cutoff time for auto-closure
+   * @returns {Promise<object>} Updated shift
+   */
+  static async autoCloseShift(id, logoutAt) {
+    const query = `
+      UPDATE Staff_Shifts
+      SET 
+        logout_at = ?,
+        total_hours = TIMESTAMPDIFF(MINUTE, login_at, ?) / 60.0,
+        notes = CONCAT(
+          COALESCE(notes, ''), 
+          IF(notes IS NULL OR notes = '', '', '\n'),
+          'Auto-closed by system: shift exceeded threshold without logout'
+        ),
+        updated_at = NOW()
+      WHERE id = ?
+    `;
+
+    await executeQuery(query, [logoutAt, logoutAt, id]);
+    return this.findById(id);
+  }
+
+  /**
    * Detect shift type based on login time
    * Uses SHIFT_WINDOWS constant for single-sourced configuration
    * 
