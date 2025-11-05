@@ -20,7 +20,7 @@ class StaffShift {
       LEFT JOIN Users u ON s.staff_user_id = u.id
       WHERE s.id = ?
     `;
-    const [rows] = await executeQuery(query, [id], connection);
+    const rows = await executeQuery(query, [id], connection);
     return rows.length > 0 ? this._transformShift(rows[0]) : null;
   }
 
@@ -59,7 +59,7 @@ class StaffShift {
       FROM Staff_Shifts s
       ${whereClause}
     `;
-    const [countResult] = await executeQuery(countQuery, params);
+    const countResult = await executeQuery(countQuery, params);
     const total = countResult[0].total;
 
     // Get paginated data
@@ -74,7 +74,7 @@ class StaffShift {
       ORDER BY s.login_at DESC
       LIMIT ? OFFSET ?
     `;
-    const [rows] = await executeQuery(dataQuery, [...params, parseInt(limit), offset]);
+    const rows = await executeQuery(dataQuery, [...params, parseInt(limit), offset]);
 
     return {
       shifts: rows.map(row => this._transformShift(row)),
@@ -122,7 +122,7 @@ class StaffShift {
       notes
     ];
 
-    const [result] = await executeQuery(query, params, connection);
+    const result = await executeQuery(query, params, connection);
     return this.findById(result.insertId, connection);
   }
 
@@ -244,7 +244,7 @@ class StaffShift {
       FROM Staff_Shifts s
       ${whereClause}
     `;
-    const [countResult] = await executeQuery(countQuery, params);
+    const countResult = await executeQuery(countQuery, params);
     const total = countResult[0].total;
 
     // Get paginated data
@@ -260,7 +260,7 @@ class StaffShift {
       ORDER BY s.login_at DESC
       LIMIT ? OFFSET ?
     `;
-    const [rows] = await executeQuery(dataQuery, [...params, parseInt(limit), offset]);
+    const rows = await executeQuery(dataQuery, [...params, parseInt(limit), offset]);
 
     return {
       shifts: rows.map(row => this._transformShift(row)),
@@ -284,7 +284,7 @@ class StaffShift {
       ORDER BY s.login_at DESC
       LIMIT 1
     `;
-    const [rows] = await executeQuery(query, [staffUserId]);
+    const rows = await executeQuery(query, [staffUserId]);
     return rows.length > 0 ? this._transformShift(rows[0]) : null;
   }
 
@@ -300,7 +300,7 @@ class StaffShift {
         AND MONTH(s.login_at) = ?
       ORDER BY s.login_at ASC
     `;
-    const [rows] = await executeQuery(query, [staffUserId, year, month]);
+    const rows = await executeQuery(query, [staffUserId, year, month]);
     return rows.map(row => this._transformShift(row));
   }
 
@@ -330,7 +330,7 @@ class StaffShift {
       ${whereClause}
         AND logout_at IS NOT NULL
     `;
-    const [totalResult] = await executeQuery(totalQuery, params);
+    const totalResult = await executeQuery(totalQuery, params);
 
     // Hours by shift type
     const byTypeQuery = `
@@ -343,7 +343,7 @@ class StaffShift {
         AND logout_at IS NOT NULL
       GROUP BY shift_type
     `;
-    const [byTypeResult] = await executeQuery(byTypeQuery, params);
+    const byTypeResult = await executeQuery(byTypeQuery, params);
 
     const hoursByShiftType = {};
     byTypeResult.forEach(row => {
@@ -361,39 +361,58 @@ class StaffShift {
     };
   }
 
+  /**
+   * Detect shift type based on login time
+   * Uses SHIFT_WINDOWS constant for single-sourced configuration
+   * 
+   * Priority order (to handle overlaps deterministically):
+   * 1. full_night (20:00-13:00, crosses midnight) - highest priority for evening logins
+   * 2. day (13:00-21:00)
+   * 3. intermediate (11:00-20:00)
+   * 
+   * @param {Date|string} loginTime - Login timestamp
+   * @returns {string} Shift type
+   */
   static detectShiftType(loginTime) {
-    // loginTime should be a Date object or timestamp
     const date = new Date(loginTime);
     const hours = date.getHours();
     const minutes = date.getMinutes();
     const timeInMinutes = hours * 60 + minutes;
 
-    // Convert shift windows to minutes
-    // Shift windows:
-    // - intermediate: 11:00-20:00 (11am-8pm)
-    // - day: 13:00-21:00 (1pm-9pm)
-    // - full_night: 20:00-13:00 (8pm-1pm, crosses midnight)
-    
-    // Check intermediate shift first (11:00-20:00)
-    // This takes priority over day shift in the 13:00-20:00 overlap
-    if (timeInMinutes >= 11 * 60 && timeInMinutes < 13 * 60) {
-      // 11:00-12:59 is exclusively intermediate
-      return 'intermediate';
-    }
+    // Helper to parse HH:MM time string to minutes
+    const parseTimeToMinutes = (timeStr) => {
+      const [h, m] = timeStr.split(':').map(Number);
+      return h * 60 + m;
+    };
 
-    // Check day shift (13:00-21:00)
-    if (timeInMinutes >= 13 * 60 && timeInMinutes < 21 * 60) {
-      // 13:00-20:59 is day shift
-      return 'day';
-    }
+    // Parse shift windows from SHIFT_WINDOWS constant
+    const fullNightStart = parseTimeToMinutes(SHIFT_WINDOWS.full_night.start); // 20:00 = 1200 minutes
+    const fullNightEnd = parseTimeToMinutes(SHIFT_WINDOWS.full_night.end);     // 13:00 = 780 minutes
+    const dayStart = parseTimeToMinutes(SHIFT_WINDOWS.day.start);               // 13:00 = 780 minutes
+    const dayEnd = parseTimeToMinutes(SHIFT_WINDOWS.day.end);                   // 21:00 = 1260 minutes
+    const intermediateStart = parseTimeToMinutes(SHIFT_WINDOWS.intermediate.start); // 11:00 = 660 minutes
+    const intermediateEnd = parseTimeToMinutes(SHIFT_WINDOWS.intermediate.end);     // 20:00 = 1200 minutes
 
-    // Check full_night (20:00-13:00, handles crossing midnight)
+    // Priority 1: Check full_night shift first (20:00-13:00, crosses midnight)
     // This covers 20:00-23:59 and 00:00-12:59
-    if (timeInMinutes >= 20 * 60 || timeInMinutes < 13 * 60) {
+    // Prefer full_night for times >= 20:00 to resolve overlap with intermediate/day
+    if (timeInMinutes >= fullNightStart || timeInMinutes < fullNightEnd) {
       return 'full_night';
     }
 
-    // Default fallback (should not reach here with proper windows)
+    // Priority 2: Check day shift (13:00-20:59)
+    // At this point, times >= 20:00 already handled by full_night
+    if (timeInMinutes >= dayStart && timeInMinutes < dayEnd) {
+      return 'day';
+    }
+
+    // Priority 3: Check intermediate shift (11:00-12:59)
+    // Times 13:00-19:59 handled by day shift
+    if (timeInMinutes >= intermediateStart && timeInMinutes < intermediateEnd) {
+      return 'intermediate';
+    }
+
+    // Fallback: Default to day shift (should not reach here with proper windows)
     return 'day';
   }
 

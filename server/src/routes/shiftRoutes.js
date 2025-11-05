@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const shiftController = require('../controllers/shiftController');
-const { authenticate, authorize, requirePermission } = require('../middleware/auth');
+const { authenticate, authorize, requirePermission, authorizeRoleOrPermission } = require('../middleware/auth');
 const { handleValidationErrors } = require('../middleware/errorHandler');
 const {
   getShiftsValidation,
@@ -42,14 +42,14 @@ router.get(
 router.get(
   '/current',
   authenticate,
-  authorize('admin', 'super_admin'),
+  authorizeRoleOrPermission(['admin', 'super_admin'], 'manage_users'),
   shiftController.getCurrentlyOnShift
 );
 
 router.get(
   '/',
   authenticate,
-  authorize('admin', 'super_admin'),
+  authorizeRoleOrPermission(['admin', 'super_admin'], 'manage_users'),
   getShiftsValidation,
   handleValidationErrors,
   shiftController.getAllShifts
@@ -67,7 +67,7 @@ router.get(
 router.put(
   '/:id',
   authenticate,
-  authorize('admin', 'super_admin'),
+  authorizeRoleOrPermission(['admin', 'super_admin'], 'manage_users'),
   shiftIdValidation,
   updateShiftValidation,
   handleValidationErrors,
@@ -93,6 +93,16 @@ router.get(
   handleValidationErrors,
   auditShiftReportDownload,
   shiftController.downloadMonthlyReportPDF
+);
+
+// CSV export route (server-side streaming)
+router.get(
+  '/export/csv',
+  authenticate,
+  authorizeRoleOrPermission(['admin', 'super_admin'], 'manage_users'),
+  getShiftsValidation,
+  handleValidationErrors,
+  shiftController.exportShiftsCSV
 );
 
 module.exports = router;

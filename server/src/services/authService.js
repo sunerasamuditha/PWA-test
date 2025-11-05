@@ -29,6 +29,7 @@ class AuthService {
       if (user.role === 'staff') {
         try {
           const ShiftService = require('./shiftService');
+          // Use local time for shift start
           shift = await ShiftService.startShift(user.id, new Date());
         } catch (error) {
           // Log warning but don't fail login if shift creation fails
@@ -264,6 +265,7 @@ class AuthService {
       if (user && user.role === 'staff') {
         try {
           const ShiftService = require('./shiftService');
+          // Use local time for shift end
           await ShiftService.endShift(userId, new Date(), null);
         } catch (error) {
           // Log warning but don't fail logout if shift end fails

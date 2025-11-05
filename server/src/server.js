@@ -5,6 +5,7 @@ const path = require('path');
 const app = require('./app'); // Import Express app (no listener)
 const { testConnection, closePool } = require('./config/database');
 const { startPeriodicCleanup } = require('./utils/cleanupTempFiles');
+const staleShiftCloser = require('./jobs/closeStaleShifts');
 
 // Server startup
 const PORT = process.env.PORT || 5000;
@@ -30,6 +31,9 @@ async function startServer() {
       24 * 60 * 60 * 1000  // Delete files older than 24 hours
     );
 
+    // Start stale shift auto-close cron job
+    staleShiftCloser.start();
+
     // Start the server
     const server = app.listen(PORT, () => {
       console.log('🚀 WeCare PWA Server started successfully');
@@ -48,6 +52,9 @@ async function startServer() {
     // Graceful shutdown handling
     const gracefulShutdown = (signal) => {
       console.log(`\n🛑 Received ${signal}. Starting graceful shutdown...`);
+      
+      // Stop stale shift closer cron job
+      staleShiftCloser.stop();
       
       // Stop periodic cleanup
       if (cleanupInterval) {

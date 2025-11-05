@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import apiService from '../../services/api';
+import { apiService } from '../../services/api';
 import ErrorMessage from '../ErrorMessage';
 import {
   validateShiftTimes,

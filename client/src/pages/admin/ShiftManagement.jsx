@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import apiService from '../../services/api';
+import { apiService } from '../../services/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import ErrorMessage from '../../components/ErrorMessage';
 import EditShiftModal from '../../components/admin/EditShiftModal';
@@ -123,46 +123,59 @@ const ShiftManagement = () => {
 
   const handleExportCSV = async () => {
     try {
-      const params = {
+      // Build query params for server-side CSV export
+      const params = new URLSearchParams({
         ...(filters.staff_user_id && { staff_user_id: filters.staff_user_id }),
         ...(filters.shift_type && { shift_type: filters.shift_type }),
         ...(filters.startDate && { startDate: filters.startDate }),
         ...(filters.endDate && { endDate: filters.endDate })
-      };
+      });
 
-      const response = await apiService.shifts.getAllShifts({ ...params, limit: 10000 });
-      if (response.success) {
-        const csvContent = convertToCSV(response.data.shifts);
-        downloadCSV(csvContent, 'shifts-export.csv');
+      // Get auth token
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('Authentication required');
       }
+
+      // Fetch CSV from server
+      const response = await fetch(`/api/shifts/export/csv?${params}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to export CSV');
+      }
+
+      // Get filename from Content-Disposition header or use default
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = 'shifts-export.csv';
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="?(.+)"?/i);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
+
+      // Download the CSV file
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      setSuccessMessage('CSV exported successfully');
+      setTimeout(() => setSuccessMessage(null), 3000);
+
     } catch (err) {
       setError('Failed to export shifts: ' + (err.message || 'Unknown error'));
     }
-  };
-
-  const convertToCSV = (data) => {
-    const headers = ['ID', 'Staff Name', 'Shift Type', 'Login Time', 'Logout Time', 'Total Hours', 'Notes'];
-    const rows = data.map(shift => [
-      shift.id,
-      shift.staffName || 'N/A',
-      shift.shiftType,
-      new Date(shift.loginAt).toLocaleString(),
-      shift.logoutAt ? new Date(shift.logoutAt).toLocaleString() : 'In Progress',
-      shift.totalHours || '-',
-      `"${(shift.notes || '').replace(/"/g, '""')}"`
-    ]);
-
-    return [headers, ...rows].map(row => row.join(',')).join('\n');
-  };
-
-  const downloadCSV = (content, filename) => {
-    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
 
   const filteredShifts = searchTerm

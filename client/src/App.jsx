@@ -29,6 +29,8 @@ import AppointmentCalendar from './pages/AppointmentCalendar.jsx';
 import PatientPaymentHistory from './pages/PatientPaymentHistory.jsx';
 import InvoiceCreation from './pages/InvoiceCreation.jsx';
 import ServiceManagement from './pages/admin/ServiceManagement.jsx';
+import StaffShiftHistory from './pages/StaffShiftHistory.jsx';
+import ShiftManagement from './pages/admin/ShiftManagement.jsx';
 import './App.css';
 
 function App() {
@@ -160,6 +162,18 @@ function App() {
                 <Route path="/invoices/create" element={
                   <ProtectedRoute allowedRoles={['admin', 'super_admin', 'staff']} requiredPermissions={['process_payments']}>
                     <InvoiceCreation />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Phase 10: Staff Shifts */}
+                <Route path="/staff/shifts" element={
+                  <ProtectedRoute allowedRoles={['staff', 'admin', 'super_admin']}>
+                    <StaffShiftHistory />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/shifts" element={
+                  <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                    <ShiftManagement />
                   </ProtectedRoute>
                 } />
                 

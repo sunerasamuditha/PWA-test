@@ -218,6 +218,39 @@ const shiftController = {
       message: 'Currently on shift staff retrieved successfully',
       data: { shifts: currentlyOnShift }
     });
+  }),
+
+  // Export shifts to CSV (server-side streaming)
+  exportShiftsCSV: asyncHandler(async (req, res) => {
+    const { staff_user_id, shift_type, startDate, endDate } = req.query;
+
+    // Validate access: only admins or staff with manage_users permission
+    const isAdmin = req.user.role === 'admin' || req.user.role === 'super_admin';
+    const hasManagePermission = (req.user.permissions || []).includes('manage_users');
+
+    if (!isAdmin && !hasManagePermission) {
+      return res.status(403).json({
+        success: false,
+        message: 'You do not have permission to export shifts'
+      });
+    }
+
+    const filters = {
+      staff_user_id: staff_user_id ? parseInt(staff_user_id) : undefined,
+      shift_type,
+      startDate,
+      endDate
+    };
+
+    // Set CSV headers
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    const filename = `shifts-export-${timestamp}.csv`;
+    
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+    // Stream CSV data
+    await ShiftService.streamShiftsAsCSV(filters, res);
   })
 };
 

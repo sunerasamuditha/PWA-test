@@ -12,7 +12,7 @@ const pool = mysql.createPool({
   queueLimit: 0,
   connectTimeout: 60000, // Fixed: use connectTimeout instead of acquireTimeout
   multipleStatements: false, // Security: prevent multiple statement execution
-  timezone: 'Z', // Use UTC timezone
+  timezone: 'local', // Use local timezone
 });
 
 /**

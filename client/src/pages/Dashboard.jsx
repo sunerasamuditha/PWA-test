@@ -243,6 +243,18 @@ const Dashboard = () => {
           ]
         };
       case 'staff':
+        return {
+          title: 'Staff Dashboard',
+          description: 'Manage your work and tasks',
+          quickActions: [
+            { title: 'My Shifts', icon: '⏰', path: '/staff/shifts' },
+            { title: 'Manage Appointments', icon: '📅', path: '/appointments' },
+            { title: 'Patient Management', icon: '👥', path: '/admin/patients' },
+            { title: 'Create Invoice', icon: '🧾', path: '/invoices/create' },
+            { title: 'Manage Services', icon: '⚕️', path: '/admin/services' },
+            { title: 'My Profile', icon: '👤', path: '/profile' }
+          ]
+        };
       case 'admin':
       case 'super_admin':
         return {
@@ -250,6 +262,7 @@ const Dashboard = () => {
           description: 'Manage the WeCare platform',
           quickActions: [
             { title: 'Manage Appointments', icon: '📅', path: '/appointments' },
+            { title: 'Shift Management', icon: '⏰', path: '/admin/shifts' },
             { title: 'Patient Management', icon: '👥', path: '/admin/patients' },
             { title: 'Create Invoice', icon: '🧾', path: '/invoices/create' },
             { title: 'Manage Services', icon: '⚕️', path: '/admin/services' },

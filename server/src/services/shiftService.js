@@ -193,10 +193,151 @@ class ShiftService {
       this._validateShiftTimes(loginAt, logoutAt);
     }
 
+    // Re-detect shift_type if login_at is being updated
+    if (updateData.login_at) {
+      const detectedShiftType = StaffShift.detectShiftType(updateData.login_at);
+      updateData.shift_type = detectedShiftType;
+    }
+
     // Update shift
     const updatedShift = await StaffShift.updateById(shiftId, updateData);
 
     return updatedShift;
+  }
+
+  /**
+   * Stream shifts data as CSV (server-side export)
+   * @param {object} filters - Query filters
+   * @param {object} res - Express response object
+   */
+  static async streamShiftsAsCSV(filters, res) {
+    const { pool } = require('../config/database');
+
+    // Build query similar to getAllShifts but without pagination
+    let query = `
+      SELECT 
+        ss.id,
+        ss.staff_user_id,
+        u.full_name as staff_name,
+        u.email as staff_email,
+        ss.shift_type,
+        ss.login_at,
+        ss.logout_at,
+        ss.total_hours,
+        ss.notes,
+        ss.created_at,
+        ss.updated_at
+      FROM staff_shifts ss
+      JOIN users u ON ss.staff_user_id = u.id
+      WHERE 1=1
+    `;
+
+    const params = [];
+
+    if (filters.staff_user_id) {
+      query += ' AND ss.staff_user_id = ?';
+      params.push(filters.staff_user_id);
+    }
+
+    if (filters.shift_type) {
+      query += ' AND ss.shift_type = ?';
+      params.push(filters.shift_type);
+    }
+
+    if (filters.startDate) {
+      query += ' AND DATE(ss.login_at) >= ?';
+      params.push(filters.startDate);
+    }
+
+    if (filters.endDate) {
+      query += ' AND DATE(ss.login_at) <= ?';
+      params.push(filters.endDate);
+    }
+
+    query += ' ORDER BY ss.login_at DESC';
+
+    try {
+      // Get connection from pool
+      const connection = await pool.getConnection();
+
+      // Execute query and get stream
+      const [rows] = await connection.execute(query, params);
+      
+      // CSV Headers
+      const headers = [
+        'ID',
+        'Staff ID',
+        'Staff Name',
+        'Staff Email',
+        'Shift Type',
+        'Login Time',
+        'Logout Time',
+        'Total Hours',
+        'Notes',
+        'Created At',
+        'Updated At'
+      ];
+
+      // Helper to escape CSV values
+      const escapeCSV = (value) => {
+        if (value === null || value === undefined) return '';
+        const str = String(value);
+        // Escape quotes and wrap in quotes if contains comma, quote, or newline
+        if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      };
+
+      // Helper to format date
+      const formatDate = (date) => {
+        if (!date) return '';
+        const d = new Date(date);
+        return d.toLocaleString('en-US', { 
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        });
+      };
+
+      // Write CSV header row
+      res.write(headers.map(escapeCSV).join(',') + '\n');
+
+      // Write data rows
+      for (const row of rows) {
+        const csvRow = [
+          row.id,
+          row.staff_user_id,
+          row.staff_name,
+          row.staff_email,
+          row.shift_type,
+          formatDate(row.login_at),
+          formatDate(row.logout_at),
+          row.total_hours !== null ? row.total_hours.toFixed(2) : '',
+          row.notes || '',
+          formatDate(row.created_at),
+          formatDate(row.updated_at)
+        ];
+
+        res.write(csvRow.map(escapeCSV).join(',') + '\n');
+      }
+
+      // End response
+      res.end();
+
+      // Release connection
+      connection.release();
+
+      console.log(`✅ CSV export completed: ${rows.length} shifts exported`);
+
+    } catch (error) {
+      console.error('CSV export error:', error);
+      throw new AppError(`CSV export failed: ${error.message}`, 500);
+    }
   }
 
   static _validateShiftTimes(loginAt, logoutAt) {
