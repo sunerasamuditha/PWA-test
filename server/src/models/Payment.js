@@ -1,6 +1,6 @@
 const { executeQuery } = require('../config/database');
 
-const PAYMENT_METHODS = ['cash', 'card', 'bank_transfer', 'insurance_credit']; // Use canonical enum values
+const PAYMENT_METHODS = ['cash', 'card', 'bank_transfer', 'insurance', 'insurance_credit']; // Use canonical enum values
 const PAYMENT_STATUSES = ['completed', 'pending', 'failed'];
 
 class Payment {

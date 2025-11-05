@@ -47,6 +47,41 @@ const requirePermissionForListAll = (req, res, next) => {
 };
 
 /**
+ * Conditional middleware to require permission unless user is the appointment owner
+ * Used for appointment cancellation to allow patient owners to cancel their own appointments
+ */
+const requirePermissionUnlessOwner = async (req, res, next) => {
+  try {
+    const appointmentId = parseInt(req.params.id);
+    const Appointment = require('../models/Appointment');
+    
+    // Load the appointment
+    const appointment = await Appointment.findById(appointmentId);
+    
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Appointment not found'
+      });
+    }
+    
+    // If user is the owner (patient), allow without permission check
+    if (req.user.id === appointment.patientUserId) {
+      return next();
+    }
+    
+    // Otherwise, require manage_appointments permission (admins/super_admins will bypass)
+    return requirePermission('manage_appointments')(req, res, next);
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Error checking appointment ownership',
+      error: error.message
+    });
+  }
+};
+
+/**
  * @route   POST /api/appointments
  * @desc    Create a new appointment
  * @access  Private (Patient, Staff, Admin)
@@ -123,12 +158,13 @@ router.put(
 /**
  * @route   PUT /api/appointments/:id/cancel
  * @desc    Cancel appointment
- * @access  Private (Owner, Staff, Admin)
+ * @access  Private (Owner, Staff with manage_appointments, Admin)
  * @note    auditAppointmentCancel runs after controller
  */
 router.put(
   '/:id/cancel',
   authenticate,
+  requirePermissionUnlessOwner,
   appointmentIdValidation,
   handleValidationErrors,
   appointmentController.cancelAppointment,

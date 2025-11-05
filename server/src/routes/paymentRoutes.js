@@ -12,11 +12,24 @@ const {
 } = require('../validators/paymentValidators');
 const { invoiceIdParamValidation } = require('../validators/invoiceValidators');
 
+/**
+ * Conditional middleware to allow admins OR staff with process_payments permission
+ */
+const requireAdminOrProcessPayments = (req, res, next) => {
+  // Admins and super_admins bypass permission check
+  if (req.user.role === 'admin' || req.user.role === 'super_admin') {
+    return next();
+  }
+  
+  // Otherwise require process_payments permission
+  return requirePermission('process_payments')(req, res, next);
+};
+
 // Record new payment
 router.post(
   '/',
   authenticate,
-  requirePermission('process_payments'),
+  requireAdminOrProcessPayments,
   recordPaymentValidation,
   handleValidationErrors,
   paymentController.recordPayment,
@@ -36,7 +49,7 @@ router.get(
 router.get(
   '/stats',
   authenticate,
-  requirePermission('process_payments'),
+  requireAdminOrProcessPayments,
   paymentController.getPaymentStats
 );
 

@@ -226,6 +226,7 @@ const Dashboard = () => {
             { title: 'Book Appointment', icon: '📅', path: '/appointments/book' },
             { title: 'View Medical Records', icon: '📋', path: '/patient/health-history' },
             { title: 'My Documents', icon: '📄', path: '/patient/documents' },
+            { title: 'Billing & Payments', icon: '💰', path: '/patient/payments' },
             { title: 'My Profile', icon: '👤', path: '/patient/profile' },
             { title: 'Emergency Contacts', icon: '🚨', path: '/emergency' }
           ]
@@ -248,12 +249,14 @@ const Dashboard = () => {
           title: 'Admin Dashboard',
           description: 'Manage the WeCare platform',
           quickActions: [
+            { title: 'Manage Appointments', icon: '📅', path: '/appointments' },
             { title: 'Patient Management', icon: '👥', path: '/admin/patients' },
+            { title: 'Create Invoice', icon: '🧾', path: '/invoices/create' },
+            { title: 'Manage Services', icon: '⚕️', path: '/admin/services' },
             { title: 'Partner Management', icon: '🤝', path: '/admin/partners' },
-            { title: 'Staff Management', icon: '👨‍💼', path: '/admin/staff' },
-            { title: 'System Analytics', icon: '📊', path: '/admin/analytics' },
-            { title: 'User Management', icon: '👤', path: '/admin/users' },
-            { title: 'System Health', icon: '💓', path: '/admin/health' }
+            { title: 'Staff Management', icon: '👨‍�', path: '/admin/staff' },
+            { title: 'System Analytics', icon: '�', path: '/admin/analytics' },
+            { title: 'User Management', icon: '�', path: '/admin/users' }
           ]
         };
       default:

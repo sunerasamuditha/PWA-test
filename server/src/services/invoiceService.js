@@ -102,14 +102,18 @@ class InvoiceService {
   /**
    * Get invoices by patient
    * 
-   * NOTE: This method performs on-demand status updates based on payment state and due dates.
-   * Status updates are batched and only executed when status definitively changes.
-   * For high-volume patient-facing scenarios, consider moving to scheduled task or
-   * gating updates behind a feature flag.
+   * NOTE: This method can perform on-demand status updates based on payment state and due dates.
+   * Status updates are opt-in via updateStatus parameter to avoid side effects on reads.
+   * For automatic updates, consider using a scheduled background job instead.
+   * 
+   * @param {number} patientUserId - Patient user ID
+   * @param {Object} filters - Query filters
+   * @param {boolean} filters.updateStatus - If true, update invoice statuses based on current state (default: false)
    */
   async getInvoicesByPatient(patientUserId, filters = {}) {
     try {
-      const result = await Invoice.findByPatientUserId(patientUserId, filters);
+      const { updateStatus = false, ...queryFilters } = filters;
+      const result = await Invoice.findByPatientUserId(patientUserId, queryFilters);
       
       // Build aggregated query for balances and overdue status in one go
       if (result.invoices.length > 0) {
@@ -139,31 +143,22 @@ class InvoiceService {
         const [balanceRows] = await executeQuery(aggregateQuery, invoiceIds);
         const balanceMap = new Map(balanceRows.map(row => [row.id, row]));
         
-        // Update invoices with balances and status where needed
+        // Update invoices with balances and optionally update status
         for (const invoice of result.invoices) {
           const balanceData = balanceMap.get(invoice.id);
           if (balanceData) {
             invoice.paidAmount = parseFloat(balanceData.paid_amount);
             invoice.remainingBalance = parseFloat(balanceData.remaining_balance);
             
-            // Determine if status needs update
-            const shouldBeOverdue = balanceData.is_overdue === 1;
-            const shouldBePaid = balanceData.remaining_balance <= 0;
-            const shouldBePartiallyPaid = balanceData.paid_amount > 0 && balanceData.remaining_balance > 0;
-            
-            let newStatus = balanceData.current_status;
-            if (shouldBePaid && balanceData.current_status !== 'paid') {
-              newStatus = 'paid';
-            } else if (shouldBeOverdue && balanceData.current_status !== 'overdue' && balanceData.current_status !== 'paid') {
-              newStatus = 'overdue';
-            } else if (shouldBePartiallyPaid && balanceData.current_status === 'pending') {
-              newStatus = 'partially_paid';
-            }
-            
-            // Only update if status actually changed
-            if (newStatus !== balanceData.current_status) {
-              await Invoice.updateStatus(invoice.id, newStatus);
-              invoice.status = newStatus;
+            // Only update status if explicitly requested via flag
+            if (updateStatus) {
+              const newStatus = this._determineNewStatus(balanceData);
+              
+              // Only update if status actually changed
+              if (newStatus !== balanceData.current_status) {
+                await Invoice.updateStatus(invoice.id, newStatus);
+                invoice.status = newStatus;
+              }
             }
           }
         }
@@ -218,14 +213,17 @@ class InvoiceService {
   /**
    * Get all invoices (for staff/admin)
    * 
-   * NOTE: This method performs on-demand status updates based on payment state and due dates.
-   * Invoices are automatically transitioned between pending/partially_paid/overdue/paid states
-   * during GET operations. Updates are batched and only performed when status definitively changes
-   * to minimize database writes. For high-volume scenarios, consider moving to a scheduled job.
+   * NOTE: This method can perform on-demand status updates based on payment state and due dates.
+   * Status updates are opt-in via updateStatus parameter to avoid side effects on reads.
+   * For automatic updates, consider using a scheduled background job instead.
+   * 
+   * @param {Object} filters - Query filters
+   * @param {boolean} filters.updateStatus - If true, update invoice statuses based on current state (default: false)
    */
   async getAllInvoices(filters = {}) {
     try {
-      const result = await Invoice.getAllInvoices(filters);
+      const { updateStatus = false, ...queryFilters } = filters;
+      const result = await Invoice.getAllInvoices(queryFilters);
       
       // Build aggregated query for balances and overdue status in one go
       if (result.invoices.length > 0) {
@@ -255,31 +253,23 @@ class InvoiceService {
         const [balanceRows] = await executeQuery(aggregateQuery, invoiceIds);
         const balanceMap = new Map(balanceRows.map(row => [row.id, row]));
         
-        // Update invoices with balances and status where needed
+        // Update invoices with balances and optionally update status
         for (const invoice of result.invoices) {
           const balanceData = balanceMap.get(invoice.id);
           if (balanceData) {
+            // Always enrich response with computed balances
             invoice.paidAmount = parseFloat(balanceData.paid_amount);
             invoice.remainingBalance = parseFloat(balanceData.remaining_balance);
             
-            // Determine if status needs update
-            const shouldBeOverdue = balanceData.is_overdue === 1;
-            const shouldBePaid = balanceData.remaining_balance <= 0;
-            const shouldBePartiallyPaid = balanceData.paid_amount > 0 && balanceData.remaining_balance > 0;
-            
-            let newStatus = balanceData.current_status;
-            if (shouldBePaid && balanceData.current_status !== 'paid') {
-              newStatus = 'paid';
-            } else if (shouldBeOverdue && balanceData.current_status !== 'overdue' && balanceData.current_status !== 'paid') {
-              newStatus = 'overdue';
-            } else if (shouldBePartiallyPaid && balanceData.current_status === 'pending') {
-              newStatus = 'partially_paid';
-            }
-            
-            // Only update if status actually changed
-            if (newStatus !== balanceData.current_status) {
-              await Invoice.updateStatus(invoice.id, newStatus);
-              invoice.status = newStatus;
+            // Only update status if explicitly requested via flag
+            if (updateStatus) {
+              const newStatus = this._determineNewStatus(balanceData);
+              
+              // Only update if status actually changed
+              if (newStatus !== balanceData.current_status) {
+                await Invoice.updateStatus(invoice.id, newStatus);
+                invoice.status = newStatus;
+              }
             }
           }
         }
@@ -421,6 +411,7 @@ class InvoiceService {
 
   /**
    * Update invoice status based on payments
+   * Uses database time (CURDATE()) to avoid timezone drift
    */
   async updateInvoiceStatus(invoiceId, connection = null) {
     try {
@@ -433,8 +424,13 @@ class InvoiceService {
 
       let newStatus = invoice.status;
 
-      // Check if past due
-      const isPastDue = invoice.dueDate && new Date(invoice.dueDate) < new Date();
+      // Check if past due using database current date to avoid timezone drift
+      const [dateCheck] = await executeQuery(
+        'SELECT ? < CURDATE() as is_past_due',
+        [invoice.dueDate],
+        connection
+      );
+      const isPastDue = invoice.dueDate && dateCheck[0].is_past_due === 1;
 
       // Determine status in priority order
       if (balance.remainingBalance <= 0) {
@@ -567,6 +563,31 @@ class InvoiceService {
     } catch (error) {
       throw new AppError('Failed to fetch patient invoice statistics', 500, error);
     }
+  }
+
+  /**
+   * Determine new status based on balance data
+   * Shared logic used by both getInvoicesByPatient and getAllInvoices
+   * 
+   * @private
+   * @param {Object} balanceData - Balance data containing is_overdue, remaining_balance, paid_amount, current_status
+   * @returns {string} New status
+   */
+  _determineNewStatus(balanceData) {
+    const shouldBeOverdue = balanceData.is_overdue === 1;
+    const shouldBePaid = balanceData.remaining_balance <= 0;
+    const shouldBePartiallyPaid = balanceData.paid_amount > 0 && balanceData.remaining_balance > 0;
+    
+    let newStatus = balanceData.current_status;
+    if (shouldBePaid && balanceData.current_status !== 'paid') {
+      newStatus = 'paid';
+    } else if (shouldBeOverdue && balanceData.current_status !== 'overdue' && balanceData.current_status !== 'paid') {
+      newStatus = 'overdue';
+    } else if (shouldBePartiallyPaid && balanceData.current_status === 'pending') {
+      newStatus = 'partially_paid';
+    }
+    
+    return newStatus;
   }
 
   /**

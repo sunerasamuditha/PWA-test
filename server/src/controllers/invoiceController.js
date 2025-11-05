@@ -35,6 +35,9 @@ const createInvoice = async (req, res, next) => {
 
 /**
  * Get invoices
+ * 
+ * Query parameters:
+ * - updateStatus: 'true' to update invoice statuses based on current state, omit or 'false' for read-only (default: false)
  */
 const getInvoices = async (req, res, next) => {
   try {
@@ -47,7 +50,8 @@ const getInvoices = async (req, res, next) => {
       page: req.query.page,
       limit: req.query.limit,
       sort_by: req.query.sort_by,
-      sort_order: req.query.sort_order
+      sort_order: req.query.sort_order,
+      updateStatus: req.query.updateStatus === 'true' // Parse string to boolean, default false
     };
 
     // If patient role, restrict to own invoices

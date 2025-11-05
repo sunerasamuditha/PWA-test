@@ -11,6 +11,19 @@ const {
   serviceIdValidation
 } = require('../validators/serviceValidators');
 
+/**
+ * Conditional middleware to allow admins OR staff with process_payments permission
+ */
+const requireAdminOrProcessPayments = (req, res, next) => {
+  // Admins and super_admins bypass permission check
+  if (req.user.role === 'admin' || req.user.role === 'super_admin') {
+    return next();
+  }
+  
+  // Otherwise require process_payments permission
+  return requirePermission('process_payments')(req, res, next);
+};
+
 // Get all services
 router.get(
   '/',
@@ -31,7 +44,7 @@ router.get(
 router.get(
   '/stats',
   authenticate,
-  requirePermission('process_payments'),
+  requireAdminOrProcessPayments,
   serviceController.getServiceStats
 );
 
@@ -48,7 +61,7 @@ router.get(
 router.post(
   '/',
   authenticate,
-  requirePermission('process_payments'),
+  requireAdminOrProcessPayments,
   createServiceValidation,
   handleValidationErrors,
   serviceController.createService,
@@ -59,7 +72,7 @@ router.post(
 router.put(
   '/:id',
   authenticate,
-  requirePermission('process_payments'),
+  requireAdminOrProcessPayments,
   serviceIdValidation,
   updateServiceValidation,
   handleValidationErrors,
@@ -71,7 +84,7 @@ router.put(
 router.delete(
   '/:id',
   authenticate,
-  requirePermission('process_payments'),
+  requireAdminOrProcessPayments,
   serviceIdValidation,
   handleValidationErrors,
   serviceController.deactivateService,
@@ -82,7 +95,7 @@ router.delete(
 router.post(
   '/:id/reactivate',
   authenticate,
-  requirePermission('process_payments'),
+  requireAdminOrProcessPayments,
   serviceIdValidation,
   handleValidationErrors,
   serviceController.reactivateService,

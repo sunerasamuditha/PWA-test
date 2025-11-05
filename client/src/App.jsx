@@ -23,6 +23,12 @@ import PartnerProfile from './pages/PartnerProfile.jsx';
 import PartnerDashboard from './pages/PartnerDashboard.jsx';
 import PartnerReferrals from './pages/PartnerReferrals.jsx';
 import PatientDocuments from './pages/PatientDocuments.jsx';
+import AppointmentBooking from './pages/AppointmentBooking.jsx';
+import AppointmentList from './pages/AppointmentList.jsx';
+import AppointmentCalendar from './pages/AppointmentCalendar.jsx';
+import PatientPaymentHistory from './pages/PatientPaymentHistory.jsx';
+import InvoiceCreation from './pages/InvoiceCreation.jsx';
+import ServiceManagement from './pages/admin/ServiceManagement.jsx';
 import './App.css';
 
 function App() {
@@ -100,6 +106,11 @@ function App() {
                     <StaffManagement />
                   </ProtectedRoute>
                 } />
+                <Route path="/admin/services" element={
+                  <ProtectedRoute allowedRoles={['admin', 'super_admin', 'staff']} requiredPermissions={['process_payments']}>
+                    <ServiceManagement />
+                  </ProtectedRoute>
+                } />
                 
                 {/* Phase 4: Patient Features */}
                 <Route path="/patient/profile" element={
@@ -117,20 +128,40 @@ function App() {
                     <PatientDocuments />
                   </ProtectedRoute>
                 } />
-                {/*
-                <Route path="/patient/payments" element={<ProtectedRoute allowedRoles={['patient']}><PatientPaymentHistory /></ProtectedRoute>} />
-                */}
+                <Route path="/patient/payments" element={
+                  <ProtectedRoute allowedRoles={['patient']}>
+                    <PatientPaymentHistory />
+                  </ProtectedRoute>
+                } />
                 
                 {/* Phase 5: Partner Features */}
                 <Route path="/partner/profile" element={<ProtectedRoute allowedRoles={['partner']}><PartnerProfile /></ProtectedRoute>} />
                 <Route path="/partner/dashboard" element={<ProtectedRoute allowedRoles={['partner']}><PartnerDashboard /></ProtectedRoute>} />
                 <Route path="/partner/referrals" element={<ProtectedRoute allowedRoles={['partner']}><PartnerReferrals /></ProtectedRoute>} />
                 
-                {/* Phase 8: Appointments
-                <Route path="/appointments/book" element={<ProtectedRoute><AppointmentBooking /></ProtectedRoute>} />
-                <Route path="/appointments" element={<ProtectedRoute><AppointmentList /></ProtectedRoute>} />
-                <Route path="/appointments/calendar" element={<ProtectedRoute><AppointmentCalendar /></ProtectedRoute>} />
-                */}
+                {/* Phase 8: Appointments */}
+                <Route path="/appointments/book" element={
+                  <ProtectedRoute allowedRoles={['patient','staff','admin','super_admin']}>
+                    <AppointmentBooking />
+                  </ProtectedRoute>
+                } />
+                <Route path="/appointments" element={
+                  <ProtectedRoute allowedRoles={['patient','staff','admin','super_admin']}>
+                    <AppointmentList />
+                  </ProtectedRoute>
+                } />
+                <Route path="/appointments/calendar" element={
+                  <ProtectedRoute allowedRoles={['patient','staff','admin','super_admin']}>
+                    <AppointmentCalendar />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Phase 9: Invoicing */}
+                <Route path="/invoices/create" element={
+                  <ProtectedRoute allowedRoles={['admin', 'super_admin', 'staff']} requiredPermissions={['process_payments']}>
+                    <InvoiceCreation />
+                  </ProtectedRoute>
+                } />
                 
                 {/* Phase 6: Admin Features
                 <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><UserManagement /></ProtectedRoute>} />

@@ -195,23 +195,62 @@ const generatePaymentReportPDF = async (req, res, next) => {
       limit: 10000
     });
 
-    // Group payments by invoice and fetch invoice details
+    // Extract unique invoice IDs
+    const uniqueInvoiceIds = [...new Set(paymentsResult.payments.map(p => p.invoiceId))];
+    
+    // Batch fetch all invoices and items to avoid N+1 query
+    const { Invoice } = require('../models/Invoice');
+    const { InvoiceItem } = require('../models/InvoiceItem');
     const invoiceMap = new Map();
-    for (const payment of paymentsResult.payments) {
-      if (!invoiceMap.has(payment.invoiceId)) {
-        const invoice = await invoiceService.getInvoiceById(
-          payment.invoiceId,
-          patientUserId,
-          'patient',
-          []
+    
+    if (uniqueInvoiceIds.length > 0) {
+      // Step 1: Fetch all invoices in one batch query (without items)
+      const invoices = await Invoice.findByIds(uniqueInvoiceIds);
+      
+      // Step 2: Fetch all items for these invoices in one batch query
+      const placeholders = uniqueInvoiceIds.map(() => '?').join(',');
+      const { executeQuery } = require('../config/database');
+      const itemsQuery = `
+        SELECT 
+          ii.*,
+          s.name as service_name,
+          s.service_category
+        FROM Invoice_Items ii
+        LEFT JOIN Services s ON ii.service_id = s.id
+        WHERE ii.invoice_id IN (${placeholders})
+        ORDER BY ii.invoice_id, ii.id
+      `;
+      const [itemRows] = await executeQuery(itemsQuery, uniqueInvoiceIds);
+      
+      // Step 3: Group items by invoice_id in memory
+      const itemsByInvoiceId = new Map();
+      for (const item of itemRows) {
+        if (!itemsByInvoiceId.has(item.invoice_id)) {
+          itemsByInvoiceId.set(item.invoice_id, []);
+        }
+        itemsByInvoiceId.get(item.invoice_id).push(Invoice._transformInvoiceItem(item));
+      }
+      
+      // Step 4: Assemble invoices with their items and calculate balances
+      for (const invoice of invoices) {
+        // Attach items
+        invoice.items = itemsByInvoiceId.get(invoice.id) || [];
+        
+        // Calculate paidAmount and remainingBalance from the payments we already fetched
+        // Filter completed payments for this invoice
+        const invoicePayments = paymentsResult.payments.filter(
+          p => p.invoiceId === invoice.id && p.paymentStatus === 'completed'
         );
-        invoiceMap.set(payment.invoiceId, {
+        const paidAmount = invoicePayments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
+        const remainingBalance = parseFloat(invoice.totalAmount) - paidAmount;
+        
+        invoiceMap.set(invoice.id, {
           ...invoice,
-          payments: []
+          paidAmount,
+          remainingBalance: Math.max(0, remainingBalance),
+          payments: invoicePayments
         });
       }
-      // Only include payments within the date range
-      invoiceMap.get(payment.invoiceId).payments.push(payment);
     }
 
     const invoices = Array.from(invoiceMap.values());

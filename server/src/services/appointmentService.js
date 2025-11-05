@@ -222,9 +222,10 @@ class AppointmentService {
    * @param {number} appointmentId - Appointment ID
    * @param {number} cancelledBy - ID of user cancelling the appointment
    * @param {string} cancellerRole - Role of user cancelling the appointment
+   * @param {Array} cancellerPermissions - Permissions of user cancelling the appointment
    * @returns {Promise<Object>} Cancelled appointment
    */
-  static async cancelAppointment(appointmentId, cancelledBy, cancellerRole) {
+  static async cancelAppointment(appointmentId, cancelledBy, cancellerRole, cancellerPermissions = []) {
     const appointment = await Appointment.findById(appointmentId);
     
     if (!appointment) {
@@ -241,11 +242,13 @@ class AppointmentService {
       throw new AppError(400, 'Cannot cancel a completed appointment');
     }
 
-    // Access control: owner, staff, or admin can cancel
+    // Access control: owner or users with roles staff/admin/super_admin can cancel
+    // For staff, require manage_appointments permission
     const isOwner = appointment.patientUserId === cancelledBy;
-    const isStaffOrAdmin = cancellerRole !== 'patient';
+    const isAdmin = cancellerRole === 'admin' || cancellerRole === 'super_admin';
+    const hasPermission = cancellerRole === 'staff' && cancellerPermissions.includes('manage_appointments');
 
-    if (!isOwner && !isStaffOrAdmin) {
+    if (!isOwner && !isAdmin && !hasPermission) {
       throw new AppError(403, 'You do not have permission to cancel this appointment');
     }
 

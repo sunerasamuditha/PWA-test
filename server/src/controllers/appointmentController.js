@@ -159,7 +159,8 @@ exports.cancelAppointment = asyncHandler(async (req, res) => {
   const cancelledAppointment = await AppointmentService.cancelAppointment(
     appointmentId,
     req.user.id,
-    req.user.role
+    req.user.role,
+    req.user.permissions || []
   );
 
   // Store both before and after states for audit logging

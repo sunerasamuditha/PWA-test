@@ -62,10 +62,10 @@ const AppointmentBooking = () => {
 
     try {
       setIsSearchingPatients(true);
-      const response = await apiService.users.getUsers({ role: 'patient', search: searchTerm, limit: 10 });
+      const response = await apiService.patients.searchPatients(searchTerm);
       
       if (response.success) {
-        setPatientSearchResults(response.data);
+        setPatientSearchResults(response.data || []);
       }
     } catch (err) {
       console.error('Error searching patients:', err);
@@ -111,12 +111,13 @@ const AppointmentBooking = () => {
 
       const response = await apiService.appointments.getAppointments({
         patient_user_id: patientId,
+        status: 'scheduled', // Only consider scheduled appointments
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString()
       });
 
       if (response.success) {
-        // Extract booked time slots
+        // Extract booked time slots - normalize to local time
         const booked = response.data.map(apt => {
           const aptDate = new Date(apt.appointmentDatetime);
           return `${aptDate.getHours().toString().padStart(2, '0')}:${aptDate.getMinutes().toString().padStart(2, '0')}`;

@@ -1,6 +1,7 @@
 const { executeQuery } = require('../config/database');
 
-const PAYMENT_METHODS = ['cash', 'card', 'insurance_credit', 'bank_transfer']; // Canonical payment method values
+// Harmonized payment methods - align with Payment model
+const PAYMENT_METHODS = ['cash', 'card', 'bank_transfer', 'insurance', 'insurance_credit']; // Canonical payment method values
 const INVOICE_STATUSES = ['pending', 'paid', 'overdue', 'partially_paid'];
 const INVOICE_TYPES = ['opd', 'admission', 'running_bill'];
 
@@ -47,6 +48,35 @@ class Invoice {
     invoice.items = itemRows.map(item => this._transformInvoiceItem(item));
 
     return invoice;
+  }
+
+  /**
+   * Find multiple invoices by IDs (batch operation)
+   * Returns basic invoice data without items for efficiency
+   */
+  static async findByIds(ids, connection = null) {
+    if (!ids || ids.length === 0) return [];
+
+    const placeholders = ids.map(() => '?').join(',');
+    const query = `
+      SELECT 
+        i.*,
+        u_patient.first_name as patient_first_name,
+        u_patient.last_name as patient_last_name,
+        u_patient.email as patient_email,
+        u_patient.phone as patient_phone,
+        u_staff.first_name as staff_first_name,
+        u_staff.last_name as staff_last_name,
+        a.appointment_datetime
+      FROM Invoices i
+      LEFT JOIN Users u_patient ON i.patient_user_id = u_patient.id
+      LEFT JOIN Users u_staff ON i.prepared_by_staff_id = u_staff.id
+      LEFT JOIN Appointments a ON i.appointment_id = a.id
+      WHERE i.id IN (${placeholders})
+    `;
+    
+    const [rows] = await executeQuery(query, ids, connection);
+    return rows.map(row => this._transformInvoice(row));
   }
 
   /**

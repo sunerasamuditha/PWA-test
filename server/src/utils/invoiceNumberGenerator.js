@@ -4,77 +4,61 @@ const { executeQuery } = require('../config/database');
  * Generate unique invoice number in format WC-YYYY-NNNN
  * Uses atomic sequence table with FOR UPDATE lock for concurrency safety
  * 
- * @param {Object} connection - Optional database connection for transactions
+ * @param {Object} connection - Database connection for transactions (REQUIRED)
  * @returns {Promise<string>} Generated invoice number
  */
-async function generateInvoiceNumber(connection = null) {
+async function generateInvoiceNumber(connection) {
+  if (!connection) {
+    throw new Error('Database connection is required for generateInvoiceNumber');
+  }
+
   const currentYear = new Date().getFullYear();
   const prefix = `WC-${currentYear}-`;
   
   try {
-    // Use transaction to ensure atomicity
-    const useTransaction = !connection;
+    // Lock the row for this year (creates row if doesn't exist)
+    // FOR UPDATE ensures only one transaction can modify at a time
+    const selectQuery = `
+      SELECT last_sequence 
+      FROM Invoice_Sequences 
+      WHERE year = ? 
+      FOR UPDATE
+    `;
     
-    if (useTransaction) {
-      // Start transaction if no connection provided
-      await executeQuery('START TRANSACTION');
-    }
+    let [rows] = await executeQuery(selectQuery, [currentYear], connection);
     
-    try {
-      // Lock the row for this year (creates row if doesn't exist)
-      // FOR UPDATE ensures only one transaction can modify at a time
-      const selectQuery = `
-        SELECT last_sequence 
-        FROM Invoice_Sequences 
-        WHERE year = ? 
-        FOR UPDATE
+    let nextSequence;
+    
+    if (rows.length === 0) {
+      // First invoice of this year - insert new row
+      const insertQuery = `
+        INSERT INTO Invoice_Sequences (year, last_sequence) 
+        VALUES (?, 1)
       `;
+      await executeQuery(insertQuery, [currentYear], connection);
+      nextSequence = 1;
+    } else {
+      // Increment sequence atomically
+      nextSequence = rows[0].last_sequence + 1;
       
-      let [rows] = await executeQuery(selectQuery, [currentYear], connection);
-      
-      let nextSequence;
-      
-      if (rows.length === 0) {
-        // First invoice of this year - insert new row
-        const insertQuery = `
-          INSERT INTO Invoice_Sequences (year, last_sequence) 
-          VALUES (?, 1)
-        `;
-        await executeQuery(insertQuery, [currentYear], connection);
-        nextSequence = 1;
-      } else {
-        // Increment sequence atomically
-        nextSequence = rows[0].last_sequence + 1;
-        
-        const updateQuery = `
-          UPDATE Invoice_Sequences 
-          SET last_sequence = ? 
-          WHERE year = ?
-        `;
-        await executeQuery(updateQuery, [nextSequence, currentYear], connection);
-      }
-      
-      if (useTransaction) {
-        await executeQuery('COMMIT');
-      }
-      
-      // Pad with zeros to 4 digits
-      const paddedSequence = String(nextSequence).padStart(4, '0');
-      const invoiceNumber = `${prefix}${paddedSequence}`;
-      
-      // Validate format before returning
-      if (!validateInvoiceNumber(invoiceNumber)) {
-        throw new Error('Generated invoice number is invalid');
-      }
-      
-      return invoiceNumber;
-      
-    } catch (error) {
-      if (useTransaction) {
-        await executeQuery('ROLLBACK');
-      }
-      throw error;
+      const updateQuery = `
+        UPDATE Invoice_Sequences 
+        SET last_sequence = ? 
+        WHERE year = ?
+      `;
+      await executeQuery(updateQuery, [nextSequence, currentYear], connection);
     }
+    
+    // Pad with zeros to 4 digits
+    const paddedSequence = String(nextSequence).padStart(4, '0');
+    const invoiceNumber = `${prefix}${paddedSequence}`;
+    
+    // Validate format before returning
+    if (!validateInvoiceNumber(invoiceNumber)) {
+      throw new Error('Generated invoice number is invalid');
+    }
+    
+    return invoiceNumber;
     
   } catch (error) {
     console.error('Error generating invoice number:', error);

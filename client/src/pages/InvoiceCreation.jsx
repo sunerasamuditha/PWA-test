@@ -251,7 +251,7 @@ const InvoiceCreation = () => {
               <option value="">-- Select Patient --</option>
               {patients.map(patient => (
                 <option key={patient.id} value={patient.id}>
-                  {patient.firstName} {patient.lastName} ({patient.email})
+                  {patient.fullName || `${patient.firstName || ''} ${patient.lastName || ''}`.trim() || patient.email}
                 </option>
               ))}
             </select>

@@ -14,11 +14,24 @@ const {
   addInvoiceItemValidation
 } = require('../validators/invoiceValidators');
 
+/**
+ * Conditional middleware to allow admins OR staff with process_payments permission
+ */
+const requireAdminOrProcessPayments = (req, res, next) => {
+  // Admins and super_admins bypass permission check
+  if (req.user.role === 'admin' || req.user.role === 'super_admin') {
+    return next();
+  }
+  
+  // Otherwise require process_payments permission
+  return requirePermission('process_payments')(req, res, next);
+};
+
 // Create new invoice
 router.post(
   '/',
   authenticate,
-  requirePermission('process_payments'),
+  requireAdminOrProcessPayments,
   createInvoiceValidation,
   handleValidationErrors,
   invoiceController.createInvoice,
@@ -38,7 +51,7 @@ router.get(
 router.get(
   '/stats',
   authenticate,
-  requirePermission('process_payments'),
+  requireAdminOrProcessPayments,
   invoiceController.getInvoiceStats
 );
 
@@ -71,7 +84,7 @@ router.get(
 router.put(
   '/:id',
   authenticate,
-  requirePermission('process_payments'),
+  requireAdminOrProcessPayments,
   invoiceIdValidation,
   updateInvoiceValidation,
   handleValidationErrors,
@@ -83,7 +96,7 @@ router.put(
 router.post(
   '/:id/items',
   authenticate,
-  requirePermission('process_payments'),
+  requireAdminOrProcessPayments,
   invoiceIdValidation,
   addInvoiceItemValidation,
   handleValidationErrors,
@@ -94,7 +107,7 @@ router.post(
 router.delete(
   '/:id/items/:itemId',
   authenticate,
-  requirePermission('process_payments'),
+  requireAdminOrProcessPayments,
   invoiceIdValidation,
   invoiceItemIdValidation,
   handleValidationErrors,
