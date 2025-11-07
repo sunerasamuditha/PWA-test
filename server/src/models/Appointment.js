@@ -158,7 +158,7 @@ class Appointment {
     // Apply pagination
     const offset = (page - 1) * limit;
     query += ' LIMIT ? OFFSET ?';
-    params.push(limit, offset);
+    params.push(Number(limit), Number(offset));
 
     const results = await executeQuery(query, params);
     
@@ -384,7 +384,7 @@ class Appointment {
     // Apply pagination
     const offset = (page - 1) * limit;
     query += ' LIMIT ? OFFSET ?';
-    params.push(limit, offset);
+    params.push(Number(limit), Number(offset));
 
     const results = await executeQuery(query, params);
     

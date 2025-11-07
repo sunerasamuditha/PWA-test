@@ -56,11 +56,13 @@ class Patient {
         WHERE id = ?
       `;
       
-      const [rows] = connection 
+      const result = connection 
         ? await connection.execute(query, [id])
         : await executeQuery(query, [id]);
       
-      if (rows.length === 0) {
+      const rows = connection ? result[0] : result;
+      
+      if (!rows || rows.length === 0) {
         return null;
       }
       

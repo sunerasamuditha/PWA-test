@@ -21,6 +21,14 @@ export const AuthProvider = ({ children }) => {
    * Check if user is authenticated by verifying stored token
    */
   const checkAuth = useCallback(async () => {
+    const clearState = () => {
+      localStorage.removeItem('wecare_token');
+      delete apiService.defaults.headers.common['Authorization'];
+      setUser(null);
+      setAccessToken(null);
+      setIsAuthenticated(false);
+    };
+
     try {
       setIsLoading(true);
       
@@ -28,6 +36,8 @@ export const AuthProvider = ({ children }) => {
       const token = localStorage.getItem('wecare_token');
       
       if (!token) {
+        // No token found, user is not authenticated
+        clearState();
         setIsLoading(false);
         return;
       }
@@ -44,12 +54,15 @@ export const AuthProvider = ({ children }) => {
         setIsAuthenticated(true);
       } else {
         // Token is invalid, clear it
-        clearAuthState();
+        clearState();
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
+      // Only log error if it's not a 401 (which is expected for invalid/expired tokens)
+      if (error.status !== 401) {
+        console.error('Auth check failed:', error);
+      }
       // Token is invalid or expired, clear it
-      clearAuthState();
+      clearState();
     } finally {
       setIsLoading(false);
     }

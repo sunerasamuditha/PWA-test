@@ -76,9 +76,17 @@ class PatientService {
       }
 
       // Get patient data
-      const patient = await Patient.findByUserId(userId);
+      let patient = await Patient.findByUserId(userId);
+      
+      // If patient profile doesn't exist, create one automatically
       if (!patient) {
-        throw new AppError('Patient profile not found', 404);
+        console.log(`Auto-creating patient profile for user ${userId}`);
+        patient = await Patient.create({
+          user_id: userId,
+          passportInfo: null,
+          insuranceInfo: null,
+          currentAddress: null
+        });
       }
 
       // Remove password hash from user data before merging

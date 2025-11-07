@@ -13,7 +13,8 @@ export const usePWA = () => {
 };
 
 export const PWAProvider = ({ children }) => {
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  // In development mode, always set online to true to prevent offline issues
+  const [isOnline, setIsOnline] = useState(import.meta.env.DEV ? true : navigator.onLine);
   const [installPrompt, setInstallPrompt] = useState(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
@@ -25,6 +26,9 @@ export const PWAProvider = ({ children }) => {
   useEffect(() => {
     const handleOnline = async () => {
       setIsOnline(true);
+      
+      // Skip retry logic in development mode
+      if (import.meta.env.DEV) return;
       
       // Retry failed requests when coming back online
       try {
@@ -43,6 +47,11 @@ export const PWAProvider = ({ children }) => {
     };
 
     const handleOffline = () => {
+      // In development mode, ignore offline events
+      if (import.meta.env.DEV) {
+        console.log('Offline event detected but ignoring in development mode');
+        return;
+      }
       setIsOnline(false);
     };
 
@@ -107,6 +116,9 @@ export const PWAProvider = ({ children }) => {
 
   // Periodically check queue size
   useEffect(() => {
+    // Skip queue checking in development mode
+    if (import.meta.env.DEV) return;
+
     const updateQueueCount = async () => {
       const count = await getQueueSize();
       setQueuedRequestsCount(count);
@@ -123,6 +135,9 @@ export const PWAProvider = ({ children }) => {
 
   // Listen to custom queue events
   useEffect(() => {
+    // Skip queue events in development mode
+    if (import.meta.env.DEV) return;
+
     const handleQueueEvent = async () => {
       const count = await getQueueSize();
       setQueuedRequestsCount(count);

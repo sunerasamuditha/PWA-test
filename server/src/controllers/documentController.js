@@ -23,7 +23,12 @@ const uploadDocument = asyncHandler(async (req, res) => {
     throw new AppError('No file uploaded', 400);
   }
 
-  const { patient_user_id, type } = req.body;
+  let { patient_user_id, type } = req.body;
+  
+  // If patient_user_id not provided, use authenticated user's ID (for patients)
+  if (!patient_user_id && req.user.role === 'patient') {
+    patient_user_id = req.user.id;
+  }
 
   // Validate required fields
   if (!patient_user_id || !type) {

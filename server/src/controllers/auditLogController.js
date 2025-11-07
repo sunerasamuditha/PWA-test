@@ -35,7 +35,7 @@ const getAuditLogs = async (req, res, next) => {
       targetId: req.query.targetId ? parseInt(req.query.targetId) : null,
       startDate: req.query.startDate || null,
       endDate: req.query.endDate || null,
-      sortBy: req.query.sortBy || 'timestamp',
+      sortBy: req.query.sortBy || 'created_at',
       sortOrder: req.query.sortOrder || 'DESC'
     };
 

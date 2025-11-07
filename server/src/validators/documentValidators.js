@@ -6,7 +6,7 @@ const { DOCUMENT_TYPES } = require('../models/Document');
  */
 const uploadDocumentValidation = [
   body('patient_user_id')
-    .notEmpty().withMessage('patient_user_id is required')
+    .optional() // Optional because patients upload to their own account
     .isInt({ min: 1 }).withMessage('patient_user_id must be a positive integer'),
   
   body('type')

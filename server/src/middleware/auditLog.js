@@ -85,8 +85,8 @@ const logAction = async ({
     const sql = `
       INSERT INTO Audit_Logs (
         user_id, action, target_entity, target_id, 
-        details_before, details_after, ip_address, user_agent, timestamp
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        details_before, details_after, ip_address, user_agent
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     // Sanitize sensitive data before logging

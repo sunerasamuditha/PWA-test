@@ -6,9 +6,7 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      strategies: 'injectManifest',
-      srcDir: 'public',
-      filename: 'sw-custom.js',
+      disable: process.env.NODE_ENV === 'development',
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'favicon.svg', 'icons/apple-touch-icon-180x180.png', 'icons/icon-192x192.png', 'icons/icon-512x512.png', 'offline.html'],
       manifest: {
@@ -68,11 +66,83 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'gstatic-fonts-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          {
+            urlPattern: /\/api\/auth\/.*/i,
+            handler: 'NetworkOnly'
+          },
+          {
+            urlPattern: /\/api\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'api-cache',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 5 // 5 minutes
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          {
+            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'images',
+              expiration: {
+                maxEntries: 60,
+                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          {
+            urlPattern: /\.(?:js|css)$/i,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'static-resources',
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          }
+        ],
         navigateFallback: '/offline.html',
         navigateFallbackDenylist: [/^\/api\//]
       },
       devOptions: {
-        enabled: true
+        enabled: false
       }
     })
   ],

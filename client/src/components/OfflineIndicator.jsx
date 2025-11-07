@@ -3,6 +3,11 @@ import { usePWA } from '../contexts/PWAContext';
 import './OfflineIndicator.css';
 
 const OfflineIndicator = () => {
+  // Disable offline indicator in development
+  if (import.meta.env.DEV) {
+    return null;
+  }
+
   const { isOnline, queuedRequestsCount, retryQueue } = usePWA();
   const [showBanner, setShowBanner] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);

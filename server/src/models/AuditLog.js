@@ -31,16 +31,18 @@ class AuditLog {
         targetId = null,
         startDate = null,
         endDate = null,
-        sortBy = 'timestamp',
+        sortBy = 'created_at',
         sortOrder = 'DESC'
       } = options;
 
       // Validate and sanitize inputs
-      const allowedSortColumns = ['timestamp', 'action', 'target_entity', 'user_id'];
+      const allowedSortColumns = ['created_at', 'timestamp', 'action', 'target_entity', 'user_id'];
       const allowedSortOrders = ['ASC', 'DESC'];
       const allowedActions = ['create', 'update', 'delete', 'login', 'logout', 'access'];
 
-      const safeSortBy = allowedSortColumns.includes(sortBy) ? sortBy : 'timestamp';
+      // Map 'timestamp' to 'created_at' for backward compatibility
+      let normalizedSortBy = sortBy === 'timestamp' ? 'created_at' : sortBy;
+      const safeSortBy = allowedSortColumns.includes(normalizedSortBy) ? normalizedSortBy : 'created_at';
       const safeSortOrder = allowedSortOrders.includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'DESC';
 
       // Build WHERE clause
@@ -89,12 +91,12 @@ class AuditLog {
       }
 
       if (startDate) {
-        whereClauses.push('al.timestamp >= ?');
+        whereClauses.push('al.created_at >= ?');
         queryParams.push(startDate);
       }
 
       if (endDate) {
-        whereClauses.push('al.timestamp <= ?');
+        whereClauses.push('al.created_at <= ?');
         queryParams.push(endDate);
       }
 
@@ -114,6 +116,12 @@ class AuditLog {
 
       // Get paginated results
       const offset = (page - 1) * limit;
+      
+      // NOTE: MySQL doesn't support parameterized LIMIT/OFFSET in prepared statements
+      // We must inject these values directly after sanitizing them as integers
+      const safeLimit = parseInt(limit);
+      const safeOffset = parseInt(offset);
+      
       const query = `
         SELECT 
           al.id,
@@ -125,7 +133,7 @@ class AuditLog {
           al.details_after,
           al.ip_address,
           al.user_agent,
-          al.timestamp,
+          al.created_at,
           u.full_name as user_name,
           u.email as user_email,
           u.role as user_role
@@ -133,10 +141,10 @@ class AuditLog {
         LEFT JOIN Users u ON al.user_id = u.id
         ${whereClause}
         ORDER BY al.${safeSortBy} ${safeSortOrder}
-        LIMIT ? OFFSET ?
+        LIMIT ${safeLimit} OFFSET ${safeOffset}
       `;
 
-      queryParams.push(parseInt(limit), parseInt(offset));
+      // queryParams only contains WHERE clause parameters, no LIMIT/OFFSET
       const rows = await executeQuery(query, queryParams);
 
       const logs = rows.map(row => this._transformAuditLog(row));
@@ -195,7 +203,7 @@ class AuditLog {
           al.details_after,
           al.ip_address,
           al.user_agent,
-          al.timestamp,
+          al.created_at,
           u.full_name as user_name,
           u.email as user_email,
           u.role as user_role
@@ -295,12 +303,12 @@ class AuditLog {
       }
 
       if (startDate) {
-        whereClauses.push('al.timestamp >= ?');
+        whereClauses.push('al.created_at >= ?');
         queryParams.push(startDate);
       }
 
       if (endDate) {
-        whereClauses.push('al.timestamp <= ?');
+        whereClauses.push('al.created_at <= ?');
         queryParams.push(endDate);
       }
 
@@ -321,6 +329,11 @@ class AuditLog {
 
       // Get results
       const offset = (page - 1) * limit;
+      
+      // NOTE: MySQL doesn't support parameterized LIMIT/OFFSET in prepared statements
+      const safeLimit = parseInt(limit);
+      const safeOffset = parseInt(offset);
+      
       const query = `
         SELECT 
           al.id,
@@ -332,18 +345,18 @@ class AuditLog {
           al.details_after,
           al.ip_address,
           al.user_agent,
-          al.timestamp,
+          al.created_at,
           u.full_name as user_name,
           u.email as user_email,
           u.role as user_role
         FROM Audit_Logs al
         LEFT JOIN Users u ON al.user_id = u.id
         ${whereClause}
-        ORDER BY al.timestamp DESC
-        LIMIT ? OFFSET ?
+        ORDER BY al.created_at DESC
+        LIMIT ${safeLimit} OFFSET ${safeOffset}
       `;
 
-      queryParams.push(parseInt(limit), parseInt(offset));
+      // queryParams only contains WHERE clause parameters, no LIMIT/OFFSET
       const rows = await executeQuery(query, queryParams);
 
       const logs = rows.map(row => this._transformAuditLog(row));
@@ -378,12 +391,12 @@ class AuditLog {
       const queryParams = [];
 
       if (startDate) {
-        whereClauses.push('timestamp >= ?');
+        whereClauses.push('created_at >= ?');
         queryParams.push(startDate);
       }
 
       if (endDate) {
-        whereClauses.push('timestamp <= ?');
+        whereClauses.push('created_at <= ?');
         queryParams.push(endDate);
       }
 
@@ -482,12 +495,12 @@ class AuditLog {
       }
 
       if (startDate) {
-        whereClauses.push('al.timestamp >= ?');
+        whereClauses.push('al.created_at >= ?');
         queryParams.push(startDate);
       }
 
       if (endDate) {
-        whereClauses.push('al.timestamp <= ?');
+        whereClauses.push('al.created_at <= ?');
         queryParams.push(endDate);
       }
 
@@ -509,11 +522,11 @@ class AuditLog {
           al.details_after,
           al.ip_address,
           al.user_agent,
-          al.timestamp
+          al.created_at
         FROM Audit_Logs al
         LEFT JOIN Users u ON al.user_id = u.id
         ${whereClause}
-        ORDER BY al.timestamp DESC
+        ORDER BY al.created_at DESC
         LIMIT 10000
       `;
 
@@ -543,7 +556,7 @@ class AuditLog {
           al.details_after,
           al.ip_address,
           al.user_agent,
-          al.timestamp,
+          al.created_at,
           u.full_name as user_name,
           u.email as user_email,
           u.role as user_role
@@ -552,7 +565,7 @@ class AuditLog {
         WHERE 
           al.action = 'delete' OR 
           (al.action = 'update' AND al.target_entity IN ('Users', 'Staff_Members'))
-        ORDER BY al.timestamp DESC
+        ORDER BY al.created_at DESC
         LIMIT ?
       `;
 
@@ -586,7 +599,7 @@ class AuditLog {
           al.details_after,
           al.ip_address,
           al.user_agent,
-          al.timestamp,
+          al.created_at,
           u.full_name as user_name,
           u.email as user_email,
           u.role as user_role
@@ -594,14 +607,14 @@ class AuditLog {
         LEFT JOIN Users u ON al.user_id = u.id
         WHERE 
           al.action = 'login' AND
-          al.timestamp >= DATE_SUB(NOW(), INTERVAL ${timePeriod}) AND
+          al.created_at >= DATE_SUB(NOW(), INTERVAL ${timePeriod}) AND
           (
             JSON_EXTRACT(al.details_after, '$.success') = false OR
             JSON_EXTRACT(al.details_after, '$.error') IS NOT NULL OR
             al.details_after LIKE '%"success":false%' OR
             al.details_after LIKE '%error%'
           )
-        ORDER BY al.timestamp DESC
+        ORDER BY al.created_at DESC
       `;
 
       const rows = await executeQuery(query, []);
@@ -626,7 +639,7 @@ class AuditLog {
       targetId: row.target_id,
       ipAddress: row.ip_address,
       userAgent: row.user_agent,
-      timestamp: row.timestamp
+      timestamp: row.created_at
     };
 
     // Parse JSON fields

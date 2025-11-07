@@ -517,7 +517,7 @@ describe('Audit Logging Coverage Tests', () => {
       const admin = await createTestUser('admin', { email: 'delete@test.com' });
       
       const response = await request(app)
-        .delete('/api/admin/audit-logs/1')
+        .delete('/api/audit-logs/1')
         .set('Authorization', `Bearer ${admin.accessToken}`)
         .expect(403);
       
@@ -529,7 +529,7 @@ describe('Audit Logging Coverage Tests', () => {
       const admin = await createTestUser('admin', { email: 'modify@test.com' });
       
       const response = await request(app)
-        .put('/api/admin/audit-logs/1')
+        .put('/api/audit-logs/1')
         .set('Authorization', `Bearer ${admin.accessToken}`)
         .send({ action: 'Modified action' })
         .expect(403);
@@ -545,7 +545,7 @@ describe('Audit Logging Coverage Tests', () => {
       const admin = await createTestUser('admin', { email: 'viewlogs@test.com' });
       
       const response = await request(app)
-        .get('/api/admin/audit-logs')
+        .get('/api/audit-logs')
         .set('Authorization', `Bearer ${admin.accessToken}`)
         .expect(200);
       
@@ -559,7 +559,7 @@ describe('Audit Logging Coverage Tests', () => {
       const patient = await createTestUser('patient', { email: 'filterpat@test.com' });
       
       const response = await request(app)
-        .get(`/api/admin/audit-logs?user_id=${patient.id}`)
+        .get(`/api/audit-logs?user_id=${patient.id}`)
         .set('Authorization', `Bearer ${admin.accessToken}`)
         .expect(200);
       
@@ -573,7 +573,7 @@ describe('Audit Logging Coverage Tests', () => {
       const endDate = new Date();
       
       const response = await request(app)
-        .get(`/api/admin/audit-logs?start_date=${startDate.toISOString()}&end_date=${endDate.toISOString()}`)
+        .get(`/api/audit-logs?start_date=${startDate.toISOString()}&end_date=${endDate.toISOString()}`)
         .set('Authorization', `Bearer ${admin.accessToken}`)
         .expect(200);
       
@@ -584,7 +584,7 @@ describe('Audit Logging Coverage Tests', () => {
       const patient = await createTestUser('patient', { email: 'noadmin@test.com' });
       
       const response = await request(app)
-        .get('/api/admin/audit-logs')
+        .get('/api/audit-logs')
         .set('Authorization', `Bearer ${patient.accessToken}`)
         .expect(403);
       

@@ -1,5 +1,8 @@
 /* Import admin styles */
 @import './styles/admin.css';
+/* Import React Big Calendar and DatePicker styles */
+@import 'react-big-calendar/lib/css/react-big-calendar.css';
+@import 'react-datepicker/dist/react-datepicker.css';
 
 /* CSS Reset and Base Styles */
 *, *::before, *::after {
@@ -2230,10 +2233,6 @@ p, h1, h2, h3, h4, h5, h6 {
 /* ===========================================
    APPOINTMENT MANAGEMENT STYLES
    =========================================== */
-
-/* Import React Big Calendar and DatePicker styles */
-@import 'react-big-calendar/lib/css/react-big-calendar.css';
-@import 'react-datepicker/dist/react-datepicker.css';
 
 /* Appointment Booking Container */
 .appointment-booking-container {

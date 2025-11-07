@@ -62,7 +62,7 @@ const getAuditLogsValidation = [
     .withMessage('End date must be a valid ISO 8601 date'),
   query('sortBy')
     .optional()
-    .isIn(['timestamp', 'action', 'target_entity', 'user_id'])
+    .isIn(['created_at', 'timestamp', 'action', 'target_entity', 'user_id'])
     .withMessage('Invalid sort field'),
   query('sortOrder')
     .optional()

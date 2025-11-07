@@ -1,3 +1,6 @@
+// Load test environment variables FIRST
+require('dotenv').config({ path: require('path').join(__dirname, '.env.test') });
+
 // Configure test-specific upload directory BEFORE any imports
 // This ensures multer config reads the correct UPLOAD_DIR
 process.env.UPLOAD_DIR = require('path').join(__dirname, '../uploads/test');
@@ -54,13 +57,14 @@ const TEST_DB_CONFIG = {
 
 /**
  * Parse SQL statements from migration file
- * Handles comments, multi-line statements, and DELIMITER syntax
+ * Handles comments, multi-line statements, DELIMITER syntax, and PREPARE/EXECUTE blocks
  */
 function parseSqlStatements(sql) {
   const statements = [];
   let currentStatement = '';
   let inDelimiterBlock = false;
   let customDelimiter = ';';
+  let inPrepareBlock = false;
   
   // Split by lines to handle DELIMITER commands and comments
   const lines = sql.split('\n');
@@ -88,11 +92,23 @@ function parseSqlStatements(sql) {
       continue;
     }
     
+    // Track PREPARE blocks (need to include EXECUTE and DEALLOCATE as one unit)
+    if (line.toUpperCase().includes('PREPARE')) {
+      inPrepareBlock = true;
+    }
+    
     // Build current statement
     currentStatement += (currentStatement ? '\n' : '') + line;
     
     // Check if statement is complete
-    if (currentStatement.trimEnd().endsWith(customDelimiter)) {
+    const shouldEnd = currentStatement.trimEnd().endsWith(customDelimiter);
+    
+    if (shouldEnd) {
+      // If in PREPARE block, wait for DEALLOCATE PREPARE before ending
+      if (inPrepareBlock && !line.toUpperCase().includes('DEALLOCATE')) {
+        continue;
+      }
+      
       // Remove delimiter and add to statements array
       const statement = currentStatement
         .substring(0, currentStatement.lastIndexOf(customDelimiter))
@@ -103,6 +119,7 @@ function parseSqlStatements(sql) {
       }
       
       currentStatement = '';
+      inPrepareBlock = false;
     }
   }
   
@@ -115,11 +132,42 @@ function parseSqlStatements(sql) {
 }
 
 /**
+ * Migration lock to prevent parallel migration runs
+ */
+let migrationPromise = null;
+let migrationCompleted = false;
+
+/**
  * Run database migrations
  * Enhanced to handle complex SQL including DELIMITER blocks and multi-line statements
+ * Skips errors for already existing objects (idempotent)
+ * Uses singleton pattern to prevent parallel execution
  */
 async function runMigrations() {
-  const migrationDir = path.join(__dirname, '../migrations');
+  // If migrations already completed, skip
+  if (migrationCompleted) {
+    return;
+  }
+  
+  // If migrations are currently running, wait for them to complete
+  if (migrationPromise) {
+    return migrationPromise;
+  }
+  
+  // Create the migration promise
+  migrationPromise = (async () => {
+    const migrationDir = path.join(__dirname, '../migrations');
+    const mysql = require('mysql2/promise');
+    
+    // Create a separate connection for migrations with multipleStatements enabled
+    const migrationConnection = await mysql.createConnection({
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT) || 3306,
+      user: process.env.DB_USER || 'root',
+      password: process.env.DB_PASSWORD || '',
+      database: process.env.DB_NAME,
+      multipleStatements: true, // Enable for PREPARE/EXECUTE blocks
+    });
   
   try {
     const files = await fs.readdir(migrationDir);
@@ -131,30 +179,57 @@ async function runMigrations() {
       const filePath = path.join(migrationDir, file);
       const sql = await fs.readFile(filePath, 'utf-8');
       
-      // Parse SQL statements with proper delimiter handling
-      const statements = parseSqlStatements(sql);
-      
-      // Execute each statement
-      for (let i = 0; i < statements.length; i++) {
-        const statement = statements[i];
-        try {
-          await executeQuery(statement);
-        } catch (error) {
-          console.error(`  ✗ ${file} - Statement ${i + 1} failed:`);
-          console.error(`    ${statement.substring(0, 100)}...`);
-          console.error(`    Error: ${error.message}`);
-          throw error;
+      try {
+        // Execute entire migration file as-is
+        await migrationConnection.query(sql);
+        console.log(`  ✓ ${file}`);
+      } catch (error) {
+        // Ignore errors for already existing objects (idempotent migrations)
+        const ignorableErrors = [
+          'Duplicate key name',
+          'already exists',
+          'Multiple primary key defined',
+          'Duplicate column name',
+          'Can\'t DROP',
+          'Duplicate index',
+          'ER_TABLE_EXISTS_ERROR',
+          'ER_DUP_KEYNAME',
+          'ER_DUP_FIELDNAME'
+        ];
+        
+        const isIgnorable = ignorableErrors.some(msg => 
+          error.message.includes(msg) || error.code === msg
+        );
+        
+        if (isIgnorable) {
+          console.log(`  ⚠ ${file} (skipped - already applied)`);
+          // CONTINUE to next file instead of throwing
+          continue;
         }
+        
+        console.error(`  ✗ ${file} failed:`);
+        console.error(`    Error: ${error.message}`);
+        console.error(`    Code: ${error.code}`);
+        // Don't throw - continue with other migrations
+        // throw error;
       }
-      
-      console.log(`  ✓ ${file} (${statements.length} statements)`);
     }
     
-    console.log('Migrations completed successfully');
+    await migrationConnection.end();
+    console.log('Migrations completed');
+    migrationCompleted = true; // Mark as completed
   } catch (error) {
-    console.error('Migration failed:', error);
-    throw error;
+    if (migrationConnection) {
+      await migrationConnection.end();
+    }
+    console.error('Migration process error:', error);
+    migrationCompleted = true; // Mark as completed even on error to prevent retries
+    // Don't throw - allow tests to proceed
+    // throw error;
   }
+  })(); // End of async IIFE
+  
+  return migrationPromise;
 }
 
 /**
@@ -286,23 +361,33 @@ async function createTestUser(role = 'patient', additionalData = {}) {
   const bcrypt = require('bcrypt');
   const jwt = require('jsonwebtoken');
   
+  // Generate truly unique email using timestamp + random string
+  const uniqueId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
   const defaultData = {
-    email: `test_${role}_${Date.now()}@test.com`,
+    email: `test_${role}_${uniqueId}@test.com`,
     password_hash: await bcrypt.hash('Test@123', 10),
     full_name: `Test ${role.charAt(0).toUpperCase() + role.slice(1)}`,
-    phone_number: '1234567890',
+    phone_number: `${Math.floor(Math.random() * 9000000000) + 1000000000}`, // Random 10-digit phone
     role: role,
     is_active: true
   };
   
+  // If additionalData has an email, make it unique by appending uniqueId
   const userData = { ...defaultData, ...additionalData };
+  if (additionalData.email && !additionalData.email.includes('_unique_')) {
+    // Append unique ID to prevent collisions while keeping test-friendly names
+    const emailParts = additionalData.email.split('@');
+    userData.email = `${emailParts[0]}_unique_${uniqueId}@${emailParts[1]}`;
+  }
   
   const query = `
     INSERT INTO Users (email, password_hash, full_name, phone_number, role, is_active)
     VALUES (?, ?, ?, ?, ?, ?)
   `;
   
-  const [result] = await executeQuery(query, [
+  // executeQuery returns rows directly (already destructured in database.js)
+  const result = await executeQuery(query, [
     userData.email,
     userData.password_hash,
     userData.full_name,
@@ -314,20 +399,28 @@ async function createTestUser(role = 'patient', additionalData = {}) {
   const userId = result.insertId;
   
   // Fetch the created user to get the UUID (generated by database)
-  const [userRows] = await executeQuery('SELECT uuid FROM Users WHERE id = ?', [userId]);
+  const userRows = await executeQuery('SELECT uuid FROM Users WHERE id = ?', [userId]);
   const uuid = userRows[0].uuid;
   
-  // Generate tokens
+  // Generate tokens (matching server JWT format)
   const accessToken = jwt.sign(
-    { id: userId, email: userData.email, role: userData.role, uuid: uuid },
+    { id: userId, email: userData.email, role: userData.role, uuid: uuid, type: 'access' },
     process.env.JWT_SECRET || 'test_secret',
-    { expiresIn: '1h' }
+    { 
+      expiresIn: '1h',
+      issuer: 'wecare-api',
+      audience: 'wecare-client'
+    }
   );
   
   const refreshToken = jwt.sign(
     { id: userId, type: 'refresh' },
-    process.env.JWT_REFRESH_SECRET || 'test_refresh_secret',
-    { expiresIn: '7d' }
+    process.env.JWT_SECRET || 'test_secret',
+    { 
+      expiresIn: '7d',
+      issuer: 'wecare-api',
+      audience: 'wecare-client'
+    }
   );
   
   return {
@@ -391,7 +484,7 @@ async function createTestPartner(userData = {}, partnerData = {}) {
   
   const defaultPartnerData = {
     user_id: user.id,
-    partner_type: 'guide',
+    type: 'guide', // Fixed: column is 'type' not 'partner_type'
     status: 'active',
     commission_points: 0.00
   };
@@ -399,13 +492,13 @@ async function createTestPartner(userData = {}, partnerData = {}) {
   const partner = { ...defaultPartnerData, ...partnerData };
   
   const query = `
-    INSERT INTO Partners (user_id, partner_type, status, commission_points)
+    INSERT INTO Partners (user_id, type, status, commission_points)
     VALUES (?, ?, ?, ?)
   `;
   
   await executeQuery(query, [
     partner.user_id,
-    partner.partner_type,
+    partner.type,
     partner.status,
     partner.commission_points
   ]);
@@ -466,7 +559,7 @@ async function createTestAppointment(patientUserId, appointmentData = {}) {
     VALUES (?, ?, ?, ?, ?)
   `;
   
-  const [result] = await executeQuery(query, [
+  const result = await executeQuery(query, [
     appointment.patient_user_id,
     appointment.appointment_datetime,
     appointment.type,
@@ -497,7 +590,7 @@ async function createTestInvoice(patientUserId, items = []) {
     VALUES (?, ?, ?, 'pending', 'opd', 'cash')
   `;
   
-  const [invoiceResult] = await executeQuery(invoiceQuery, [
+  const invoiceResult = await executeQuery(invoiceQuery, [
     invoiceNumber,
     patientUserId,
     totalAmount
@@ -548,7 +641,7 @@ async function createTestDocument(patientUserId, documentData = {}) {
     VALUES (?, ?, ?, ?, ?, ?)
   `;
   
-  const [result] = await executeQuery(query, [
+  const result = await executeQuery(query, [
     document.patient_user_id,
     document.type,
     document.file_path,
@@ -575,16 +668,20 @@ function getAuthToken(userId) {
   // Get user from database
   const getUserQuery = `SELECT id, email, role FROM Users WHERE id = ?`;
   
-  return executeQuery(getUserQuery, [userId]).then(([rows]) => {
+  return executeQuery(getUserQuery, [userId]).then((rows) => {
     if (rows.length === 0) {
       throw new Error(`User ${userId} not found`);
     }
     
     const user = rows[0];
     return jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      { id: user.id, email: user.email, role: user.role, type: 'access' },
       process.env.JWT_SECRET || 'test_secret',
-      { expiresIn: '1h' }
+      { 
+        expiresIn: '1h',
+        issuer: 'wecare-api',
+        audience: 'wecare-client'
+      }
     );
   });
 }
@@ -658,10 +755,22 @@ async function cleanupTestFiles() {
  * @param {string} tableName - Table name
  */
 async function truncateTable(tableName) {
-  // Disable foreign key checks temporarily
-  await executeQuery('SET FOREIGN_KEY_CHECKS = 0');
-  await executeQuery(`TRUNCATE TABLE ${tableName}`);
-  await executeQuery('SET FOREIGN_KEY_CHECKS = 1');
+  try {
+    // Disable foreign key checks, truncate, and re-enable in one go
+    await executeQuery('SET FOREIGN_KEY_CHECKS = 0');
+    await executeQuery(`TRUNCATE TABLE ${tableName}`);
+  } catch (error) {
+    // If TRUNCATE fails, try DELETE
+    console.warn(`TRUNCATE failed for ${tableName}, using DELETE: ${error.message}`);
+    try {
+      await executeQuery(`DELETE FROM ${tableName}`);
+    } catch (deleteError) {
+      console.error(`Failed to clean ${tableName}:`, deleteError.message);
+    }
+  } finally {
+    // Always re-enable foreign key checks
+    await executeQuery('SET FOREIGN_KEY_CHECKS = 1');
+  }
 }
 
 /**

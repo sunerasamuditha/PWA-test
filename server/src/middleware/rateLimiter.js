@@ -9,10 +9,12 @@ const keyGenerator = (req) => {
 };
 
 /**
- * Skip function to bypass rate limiting for admins in development
+ * Skip function to bypass rate limiting for admins in development and all requests in test mode
  */
 const skip = (req) => {
-  return process.env.NODE_ENV === 'development' || req.user?.role === 'super_admin';
+  return process.env.NODE_ENV === 'test' || 
+         process.env.NODE_ENV === 'development' || 
+         req.user?.role === 'super_admin';
 };
 
 /**

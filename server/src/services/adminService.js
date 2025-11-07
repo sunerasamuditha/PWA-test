@@ -457,7 +457,7 @@ class AdminService {
           WHERE created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
           AND deleted_at IS NULL
         )
-        ORDER BY timestamp DESC
+        ORDER BY created_at DESC
         LIMIT 10
       `;
       
@@ -480,9 +480,9 @@ class AdminService {
             COUNT(CASE WHEN action = 'login' THEN 1 END) as login_actions,
             COUNT(CASE WHEN action = 'logout' THEN 1 END) as logout_actions,
             COUNT(CASE WHEN action = 'access' THEN 1 END) as access_actions,
-            COUNT(CASE WHEN DATE(timestamp) = CURDATE() THEN 1 END) as logs_today,
-            COUNT(CASE WHEN DATE(timestamp) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) THEN 1 END) as logs_week,
-            COUNT(CASE WHEN DATE(timestamp) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) THEN 1 END) as logs_month
+            COUNT(CASE WHEN DATE(created_at) = CURDATE() THEN 1 END) as logs_today,
+            COUNT(CASE WHEN DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) THEN 1 END) as logs_week,
+            COUNT(CASE WHEN DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) THEN 1 END) as logs_month
           FROM Audit_Logs
         `;
         
@@ -509,7 +509,7 @@ class AdminService {
             al.action,
             al.target_entity,
             al.target_id,
-            al.timestamp,
+            al.created_at,
             u.full_name as user_name,
             u.email as user_email
           FROM Audit_Logs al
@@ -517,7 +517,7 @@ class AdminService {
           WHERE 
             al.action = 'delete' OR 
             (al.action = 'update' AND al.target_entity IN ('Users', 'Staff_Members'))
-          ORDER BY al.timestamp DESC
+          ORDER BY al.created_at DESC
           LIMIT 5
         `;
         
@@ -529,7 +529,7 @@ class AdminService {
             al.id,
             al.user_id,
             al.ip_address,
-            al.timestamp,
+            al.created_at,
             al.details_after,
             u.full_name as user_name,
             u.email as user_email
@@ -537,14 +537,14 @@ class AdminService {
           LEFT JOIN Users u ON al.user_id = u.id
           WHERE 
             al.action = 'login' AND
-            al.timestamp >= DATE_SUB(NOW(), INTERVAL 24 HOUR) AND
+            al.created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR) AND
             (
               JSON_EXTRACT(al.details_after, '$.success') = false OR
               JSON_EXTRACT(al.details_after, '$.error') IS NOT NULL OR
               al.details_after LIKE '%"success":false%' OR
               al.details_after LIKE '%error%'
             )
-          ORDER BY al.timestamp DESC
+          ORDER BY al.created_at DESC
           LIMIT 10
         `;
         
@@ -757,7 +757,7 @@ class AdminService {
           WHERE created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
           AND deleted_at IS NULL
         )
-        ORDER BY timestamp DESC
+        ORDER BY created_at DESC
         LIMIT ?
       `;
       

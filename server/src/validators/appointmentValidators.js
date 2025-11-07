@@ -70,7 +70,8 @@ const createAppointmentValidation = [
     .withMessage(`appointment_type must be one of: ${APPOINTMENT_TYPES.join(', ')}`),
   
   body('notes')
-    .optional()
+    .optional({ nullable: true, checkFalsy: true })
+    .if(body('notes').exists().notEmpty())
     .custom((value, { req }) => {
       // Only staff, admin, and super_admin can provide notes
       if (value && req.user && req.user.role === 'patient') {
@@ -120,7 +121,8 @@ const updateAppointmentValidation = [
     .withMessage(`appointment_type must be one of: ${APPOINTMENT_TYPES.join(', ')}`),
   
   body('notes')
-    .optional()
+    .optional({ nullable: true, checkFalsy: true })
+    .if(body('notes').exists().notEmpty())
     .custom((value, { req }) => {
       // Only staff, admin, and super_admin can provide notes
       if (value && req.user && req.user.role === 'patient') {
@@ -206,7 +208,8 @@ const completeValidation = [
     .isInt({ min: 1 }).withMessage('Appointment ID must be a positive integer'),
   
   body('notes')
-    .optional()
+    .optional({ nullable: true, checkFalsy: true })
+    .if(body('notes').exists().notEmpty())
     .isString().withMessage('notes must be a string')
     .isLength({ max: 1000 }).withMessage('notes must not exceed 1000 characters')
 ];

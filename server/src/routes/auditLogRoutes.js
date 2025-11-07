@@ -171,4 +171,42 @@ router.get(
   getAuditLogById
 );
 
+/**
+ * @route   PUT /api/audit-logs/:logId
+ * @desc    Attempt to modify audit log (always returns 403 - audit logs are immutable)
+ * @access  Private
+ */
+router.put(
+  '/:logId',
+  authenticate,
+  (req, res) => {
+    res.status(403).json({
+      status: 'error',
+      error: {
+        message: 'Audit logs are immutable and cannot be modified',
+        code: 'AUDIT_LOG_IMMUTABLE'
+      }
+    });
+  }
+);
+
+/**
+ * @route   DELETE /api/audit-logs/:logId
+ * @desc    Attempt to delete audit log (always returns 403 - audit logs are immutable)
+ * @access  Private
+ */
+router.delete(
+  '/:logId',
+  authenticate,
+  (req, res) => {
+    res.status(403).json({
+      status: 'error',
+      error: {
+        message: 'Audit logs are immutable and cannot be deleted',
+        code: 'AUDIT_LOG_IMMUTABLE'
+      }
+    });
+  }
+);
+
 module.exports = router;

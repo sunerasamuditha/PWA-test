@@ -111,12 +111,12 @@ router.put(
 );
 
 /**
- * @route   PUT /api/auth/password
+ * @route   PUT /api/auth/password-change
  * @desc    Change user password
  * @access  Private
  */
 router.put(
-  '/password',
+  '/password-change',
   authenticate,
   passwordChangeLimiter,
   changePasswordValidation,
